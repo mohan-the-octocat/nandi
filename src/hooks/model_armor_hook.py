@@ -54,7 +54,7 @@ def main() -> None:
             else:
                 hook.reply_deny(deny_reason)
         else:
-            hook.reply_pre_invocation(inject_message=deny_reason)
+            hook.reply_block_pre_invocation(deny_reason)
 
     # Clean execution
     if hook.tool_call:

@@ -67,47 +67,76 @@ class ModelArmorClient:
         project_id: str = "stratosphere-461622",
         location: str = "asia-south1",
         template_id: str = "fsi-india-compliance-template",
-        endpoint: str = "modelarmor.googleapis.com",
+        endpoint: Optional[str] = None,
         mock_mode: bool = False,
         timeout_seconds: float = 5.0,
         retry_attempts: int = 2,
     ):
-        self.project_id = project_id
-        self.location = location
-        self.template_id = template_id
-        self.endpoint = endpoint
+        self.project_id = os.environ.get("MODEL_ARMOR_PROJECT_ID", project_id)
+        self.location = os.environ.get("MODEL_ARMOR_LOCATION", location)
+        self.template_id = os.environ.get("MODEL_ARMOR_TEMPLATE_ID", template_id)
+        self.endpoint = endpoint or os.environ.get("MODEL_ARMOR_ENDPOINT")
         self.mock_mode = mock_mode or os.environ.get("MODEL_ARMOR_MOCK_MODE", "").lower() in ("true", "1", "yes")
         self.timeout_seconds = timeout_seconds
         self.retry_attempts = retry_attempts
 
     def _get_auth_token(self) -> Optional[str]:
-        """Retrieves GCP OAuth2 access token via environment or gcloud once."""
+        """Retrieves GCP OAuth2 access token via environment, token file, google-auth ADC, or gcloud."""
         if self.mock_mode:
             return None
 
         if ModelArmorClient._auth_attempted:
             return ModelArmorClient._cached_token
 
-        # Check environment variable first
+        # 1. Check environment variable first
         token = os.environ.get("GOOGLE_OAUTH_ACCESS_TOKEN") or os.environ.get("GCP_ACCESS_TOKEN")
-        if token:
-            ModelArmorClient._cached_token = token
+        if token and token.strip():
+            ModelArmorClient._cached_token = token.strip()
             ModelArmorClient._auth_attempted = True
-            return token
+            return ModelArmorClient._cached_token
 
-        # Fast gcloud check
+        # 2. Check token file if configured or at ~/.config/gcloud/access_token
+        token_file = os.environ.get("GCP_ACCESS_TOKEN_FILE") or os.path.expanduser("~/.config/gcloud/access_token")
+        if os.path.exists(token_file):
+            try:
+                with open(token_file, "r", encoding="utf-8") as f:
+                    file_token = f.read().strip()
+                if file_token:
+                    ModelArmorClient._cached_token = file_token
+                    ModelArmorClient._auth_attempted = True
+                    return ModelArmorClient._cached_token
+            except Exception:
+                pass
+
+        # 3. Try in-process google.auth Application Default Credentials (fast, no subprocess)
         try:
-            res = subprocess.run(
-                ["gcloud", "auth", "print-access-token"],
-                capture_output=True,
-                text=True,
-                timeout=1.0,
-                check=False,
-            )
-            if res.returncode == 0 and res.stdout.strip():
-                ModelArmorClient._cached_token = res.stdout.strip()
+            import google.auth
+            import google.auth.transport.requests
+            creds, _ = google.auth.default(scopes=["https://www.googleapis.com/auth/cloud-platform"])
+            auth_req = google.auth.transport.requests.Request()
+            creds.refresh(auth_req)
+            if creds.token:
+                ModelArmorClient._cached_token = creds.token
+                ModelArmorClient._auth_attempted = True
+                return ModelArmorClient._cached_token
         except Exception:
             pass
+
+        # 4. Fallback to gcloud CLI with 4.0s timeout (gcloud takes ~1.3s-2.5s on gLinux)
+        for cmd in (["gcloud", "auth", "print-access-token"], ["gcloud", "auth", "application-default", "print-access-token"]):
+            try:
+                res = subprocess.run(
+                    cmd,
+                    capture_output=True,
+                    text=True,
+                    timeout=4.0,
+                    check=False,
+                )
+                if res.returncode == 0 and res.stdout.strip():
+                    ModelArmorClient._cached_token = res.stdout.strip()
+                    break
+            except Exception:
+                pass
 
         ModelArmorClient._auth_attempted = True
         return ModelArmorClient._cached_token
@@ -132,8 +161,7 @@ class ModelArmorClient:
             user_prompt=prompt,
         )
 
-        auth_token = self._get_auth_token()
-        if not auth_token or self.mock_mode:
+        if self.mock_mode:
             raw_mock = simulate_model_armor_sanitization(prompt, tmpl)
             elapsed_ms = (time.perf_counter() - start_time) * 1000.0
             s_result = raw_mock.get("sanitization_result", {})
@@ -147,8 +175,28 @@ class ModelArmorClient:
                 latency_ms=round(elapsed_ms, 2),
             )
 
-        # Real GCP API call
-        url = f"https://{self.endpoint}/v1/{req.template_resource_name}:sanitizeUserPrompt"
+        auth_token = self._get_auth_token()
+        if not auth_token:
+            elapsed_ms = (time.perf_counter() - start_time) * 1000.0
+            return ModelArmorResponse(
+                success=False,
+                raw_response={},
+                filter_match_state="NO_MATCH_FOUND",
+                invocation_result="FAILURE",
+                filter_results={},
+                error_message="Authentication failed: Unable to obtain GCP OAuth2 access token for Model Armor API call.",
+                latency_ms=round(elapsed_ms, 2),
+            )
+
+        # Real GCP API call - Use Regional Endpoint (REP) for regional locations
+        if self.endpoint:
+            target_endpoint = self.endpoint
+        elif loc == "global":
+            target_endpoint = "modelarmor.googleapis.com"
+        else:
+            target_endpoint = f"modelarmor.{loc}.rep.googleapis.com"
+
+        url = f"https://{target_endpoint}/v1/{req.template_resource_name}:sanitizeUserPrompt"
         payload_bytes = json.dumps(req.to_api_payload()).encode("utf-8")
 
         headers = {
@@ -186,16 +234,14 @@ class ModelArmorClient:
 
             time.sleep(0.1 * (2 ** attempt))
 
-        # Fallback to simulation engine if network or endpoint fails
-        raw_mock = simulate_model_armor_sanitization(prompt, tmpl)
+        # Fail-closed: if live Model Armor call fails, return failure response so prompt is blocked
         elapsed_ms = (time.perf_counter() - start_time) * 1000.0
-        s_result = raw_mock.get("sanitization_result", {})
         return ModelArmorResponse(
             success=False,
-            raw_response=raw_mock,
-            filter_match_state=s_result.get("filter_match_state", "NO_MATCH_FOUND"),
-            invocation_result="PARTIAL",
-            filter_results=s_result.get("filter_results", {}),
-            error_message=f"Model Armor live call failed ({last_error}). Evaluated via fallback engine.",
+            raw_response={},
+            filter_match_state="NO_MATCH_FOUND",
+            invocation_result="FAILURE",
+            filter_results={},
+            error_message=f"Model Armor live API call failed ({last_error}). Prompt blocked under fail-closed security policy.",
             latency_ms=round(elapsed_ms, 2),
         )

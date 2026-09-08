@@ -44,6 +44,23 @@ class TestModelArmor(unittest.TestCase):
         self.assertEqual(report.decision, "deny")
         self.assertIn("SEBI-CSCRF-NET-03", report.sebi_compliance_codes)
 
+    def test_fail_closed_when_auth_or_api_fails(self):
+        # Create a live client (mock_mode=False) with no auth token
+        client_no_auth = ModelArmorClient(mock_mode=False)
+        client_no_auth._get_auth_token = lambda: None
+        prompt = "Routine banking inquiry that would otherwise pass."
+        resp = client_no_auth.sanitize_user_prompt(prompt)
+
+        self.assertFalse(resp.success)
+        self.assertEqual(resp.invocation_result, "FAILURE")
+
+        report = self.evaluator.evaluate(resp)
+        self.assertFalse(report.is_allowed)
+        self.assertEqual(report.decision, "deny")
+        self.assertEqual(report.risk_score, 1.0)
+        self.assertIn("Fail-Closed Policy", report.reason)
+        self.assertIn("Prompt blocked from propagating to backend model", report.reason)
+
 
 if __name__ == "__main__":
     unittest.main()

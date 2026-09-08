@@ -131,3 +131,10 @@ class AntigravityHookBase:
         sys.stdout.write(json.dumps(resp) + "\n")
         sys.stdout.flush()
         sys.exit(0)
+
+    def reply_block_pre_invocation(self, reason: str) -> None:
+        """Aborts PreInvocation by writing the block reason to stderr and exiting with a non-zero status code so the prompt is not propagated to the backend model."""
+        sys.stderr.write(f"{reason}\n")
+        sys.stderr.flush()
+        sys.exit(1)
+

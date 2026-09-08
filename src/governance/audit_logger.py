@@ -77,15 +77,22 @@ class FSIAuditLogger:
         salt: str = "FSI_GRC_SALT_INDIA_2026",
     ):
         if not log_file_path:
-            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-            log_file_path = os.path.join(base_dir, "logs", "fsi_audit.log")
+            env_log_path = os.environ.get("FSI_AUDIT_LOG_PATH")
+            if env_log_path:
+                log_file_path = env_log_path
+            else:
+                base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+                log_file_path = os.path.join(base_dir, "logs", "fsi_audit.log")
 
         self.log_file_path = log_file_path
         self.emit_to_stderr = emit_to_stderr
         self.salt = salt
         self.last_hash = "GENESIS_BLOCK_FSI_INDIA_0000000000000000"
 
-        os.makedirs(os.path.dirname(self.log_file_path), exist_ok=True)
+        try:
+            os.makedirs(os.path.dirname(self.log_file_path), exist_ok=True)
+        except OSError:
+            pass
         self._recover_last_hash()
 
     def _recover_last_hash(self) -> None:
@@ -147,8 +154,11 @@ class FSIAuditLogger:
         entry_json = json.dumps(event.to_dict())
 
         # Write to log file
-        with open(self.log_file_path, "a", encoding="utf-8") as f:
-            f.write(entry_json + "\n")
+        try:
+            with open(self.log_file_path, "a", encoding="utf-8") as f:
+                f.write(entry_json + "\n")
+        except OSError:
+            pass
 
         # Emit to stderr if enabled
         if self.emit_to_stderr:

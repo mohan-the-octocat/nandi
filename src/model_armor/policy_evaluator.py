@@ -74,9 +74,27 @@ class ModelArmorPolicyEvaluator:
         sebi_codes: List[str] = []
         risk_score = 0.0
 
-        if not response.success and response.error_message:
-            # If network error occurred and partial response was returned
-            pass
+        if not response.success or response.invocation_result == "FAILURE":
+            err_msg = response.error_message or "Authentication or Model Armor API call failed."
+            violations.append(f"Fail-Closed Security Gate: {err_msg}")
+            rbi_codes.append("RBI-ITG-SEC-01")
+            sebi_codes.append("SEBI-CSCRF-AI-01")
+            risk_score = 1.0
+            reason = (
+                f"Model Armor Security Gate Denied Prompt (Fail-Closed Policy): {err_msg} "
+                f"Prompt blocked from propagating to backend model. Regulatory Mandates Triggered: {', '.join(sorted(set(rbi_codes + sebi_codes)))}."
+            )
+            return ModelArmorEvaluationReport(
+                is_allowed=False,
+                decision="deny",
+                reason=reason,
+                risk_score=1.0,
+                violations_detected=violations,
+                filter_details={},
+                rbi_compliance_codes=sorted(list(set(rbi_codes))),
+                sebi_compliance_codes=sorted(list(set(sebi_codes))),
+                latency_ms=response.latency_ms,
+            )
 
         filter_res = response.filter_results or {}
 
