@@ -145,7 +145,11 @@ class TestHooks(unittest.TestCase):
         res = self._invoke_hook(
             "src/hooks/model_armor_hook.py",
             pre_inv_payload,
-            env_override={"GOOGLE_OAUTH_ACCESS_TOKEN": "", "GCP_ACCESS_TOKEN": ""},
+            env_override={
+                "MODEL_ARMOR_NO_AUTH": "1",
+                "GOOGLE_OAUTH_ACCESS_TOKEN": "",
+                "GCP_ACCESS_TOKEN": "",
+            },
             expect_exit_code=1,
         )
         self.assertEqual(res.get("returncode"), 1)

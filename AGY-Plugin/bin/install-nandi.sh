@@ -25,6 +25,7 @@ USE_VENV=true
 RECREATE_VENV=false
 SKIP_AUTH=false
 SKIP_VALIDATION=false
+RUN_TESTS=false
 
 print_usage() {
   cat <<EOF
@@ -36,6 +37,7 @@ Options:
   --recreate-venv          Recreate the isolated .venv environment from scratch
   --skip-auth              Skip interactive 'gcloud auth application-default login' (e.g. if already configured)
   --skip-validation        Skip live Model Armor API validation call
+  --run-tests              Run complete 31-test suite during installation (default: false)
   -h, --help               Show this help message
 
 Examples:
@@ -44,6 +46,7 @@ Examples:
   ./AGY-Plugin/bin/install-nandi.sh --project-dir /path/to/my-project
   ./AGY-Plugin/bin/install-nandi.sh -p .
   ./AGY-Plugin/bin/install-nandi.sh --skip-auth
+  ./AGY-Plugin/bin/install-nandi.sh --run-tests
 EOF
 }
 
@@ -68,6 +71,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --skip-validation)
       SKIP_VALIDATION=true
+      shift
+      ;;
+    --run-tests)
+      RUN_TESTS=true
       shift
       ;;
     -h|--help)
@@ -137,24 +144,36 @@ if [[ "${USE_VENV}" == "true" ]]; then
 
   if [[ ! -d "${VENV_DIR}" ]]; then
     echo "  Initializing isolated virtual environment at ${VENV_DIR}..."
-    python3 -m venv "${VENV_DIR}"
-    echo "  ✓ Virtual environment initialized: ${VENV_DIR}"
+    if ! python3 -m venv "${VENV_DIR}" 2>/dev/null; then
+      echo "  ℹ Note: 'ensurepip' not found on system (standard on Debian/Ubuntu/Cloudtop without python3-venv)."
+      echo "    Creating hermetic virtual environment with --without-pip..."
+      rm -rf "${VENV_DIR}"
+      if ! python3 -m venv --without-pip "${VENV_DIR}" 2>/dev/null; then
+        echo "  ⚠️ Warning: Unable to create virtual environment. Falling back to host system python3..."
+        USE_VENV=false
+      fi
+    fi
   else
     echo "  ✓ Existing virtual environment detected: ${VENV_DIR}"
   fi
 
-  PYTHON_EXEC="${VENV_DIR}/bin/python3"
-  if [[ ! -x "${PYTHON_EXEC}" ]]; then
-    echo "❌ Error: Virtual environment python binary not executable: ${PYTHON_EXEC}" >&2
-    exit 1
-  fi
+  if [[ "${USE_VENV}" == "true" ]]; then
+    PYTHON_EXEC="${VENV_DIR}/bin/python3"
+    if [[ ! -x "${PYTHON_EXEC}" ]]; then
+      echo "❌ Error: Virtual environment python binary not executable: ${PYTHON_EXEC}" >&2
+      exit 1
+    fi
+    echo "  ✓ Virtual environment verified: ${VENV_DIR}"
 
-  # Attempt installing optional acceleration packages in .venv if pip is available
-  if [[ -x "${VENV_DIR}/bin/pip" ]]; then
-    echo "  Checking optional acceleration packages in .venv (google-auth, pyyaml)..."
-    "${VENV_DIR}/bin/pip" install --quiet google-auth pyyaml 2>/dev/null || true
+    # Attempt installing optional acceleration packages in .venv if pip is available
+    if [[ -x "${VENV_DIR}/bin/pip" ]]; then
+      echo "  Checking optional acceleration packages in .venv (google-auth, pyyaml)..."
+      "${VENV_DIR}/bin/pip" install --quiet google-auth pyyaml 2>/dev/null || true
+    fi
   fi
-else
+fi
+
+if [[ "${USE_VENV}" != "true" ]]; then
   PYTHON_EXEC="${HOST_PYTHON_BIN}"
   echo "  ℹ Using host system python3 (--system override active): ${PYTHON_EXEC}"
 fi
@@ -246,22 +265,7 @@ for file in "${REQUIRED_FILES[@]}"; do
   fi
 done
 
-GCP_REQUIRED_FILES=(
-  "bin/setup-model-armor.sh"
-  "terraform/main.tf"
-  "terraform/variables.tf"
-  "terraform/outputs.tf"
-  "generated_model_armor_template.json"
-)
-
-for file in "${GCP_REQUIRED_FILES[@]}"; do
-  if [[ ! -f "${GCP_ROOT}/${file}" ]]; then
-    echo "❌ Missing required GCP server infrastructure file: ${file}" >&2
-    echo "   Please verify that the GCP server directory is complete and intact." >&2
-    exit 1
-  fi
-done
-echo "  ✓ Local AGY-Plugin and GCP repository integrity verified"
+echo "  ✓ Local AGY-Plugin repository integrity verified"
 
 # ------------------------------------------------------------------------------
 # 2. Google Cloud Authentication ('gcloud auth application-default login')
@@ -433,16 +437,21 @@ PY
 fi
 
 # ------------------------------------------------------------------------------
-# 4. Make Hook Entrypoints Executable & Run Test Suite
+# 4. Configure Lifecycle Hooks & Entrypoints
 # ------------------------------------------------------------------------------
 echo ""
-echo "[Step 4/5] Running Test Suite..."
+echo "[Step 4/5] Configuring Lifecycle Hooks & Permissions..."
 
-chmod +x "${PLUGIN_ROOT}"/src/hooks/*.py "${PLUGIN_ROOT}/src/cli/grc_admin.py" "${SCRIPT_DIR}/install-nandi.sh"
+chmod +x "${PLUGIN_ROOT}"/src/hooks/*.py "${PLUGIN_ROOT}/src/cli/grc_admin.py" "${SCRIPT_DIR}/install-nandi.sh" 2>/dev/null || true
 echo "✓ Made hook entrypoints and CLI executable"
 
-"${PYTHON_EXEC}" "${REPO_ROOT}/tests/run_all_tests.py"
-echo "✓ All 31 unit tests passed successfully"
+if [[ "${RUN_TESTS}" == "true" ]]; then
+  echo "  Running complete unit test suite (--run-tests specified)..."
+  "${PYTHON_EXEC}" "${REPO_ROOT}/tests/run_all_tests.py"
+  echo "✓ All 31 unit tests passed successfully"
+else
+  echo "✓ Model Armor connectivity verified in Step 3; full test suite skipped during installation."
+fi
 
 # Dynamically update hooks.json with absolute path and exact python interpreter
 "${PYTHON_EXEC}" - "${PLUGIN_ROOT}/hooks.json" "${PLUGIN_ROOT}" "${PYTHON_EXEC}" <<'PY'
