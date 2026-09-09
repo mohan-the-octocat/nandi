@@ -2,6 +2,7 @@ import json
 import os
 import sys
 import unittest
+import urllib.error
 from unittest.mock import MagicMock, patch
 
 repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -151,7 +152,6 @@ class TestModelArmor(unittest.TestCase):
     @patch.object(ModelArmorClient, "_get_auth_token", return_value="test-token")
     @patch("urllib.request.urlopen")
     def test_get_template_not_found(self, mock_urlopen, mock_auth):
-        import urllib.error
         mock_urlopen.side_effect = urllib.error.HTTPError(
             url="https://modelarmor.asia-south1.rep.googleapis.com",
             code=404,
@@ -167,7 +167,6 @@ class TestModelArmor(unittest.TestCase):
     @patch.object(ModelArmorClient, "_get_auth_token", return_value="test-token")
     @patch("urllib.request.urlopen")
     def test_get_template_permission_denied(self, mock_urlopen, mock_auth):
-        import urllib.error
         mock_urlopen.side_effect = urllib.error.HTTPError(
             url="https://modelarmor.asia-south1.rep.googleapis.com",
             code=403,

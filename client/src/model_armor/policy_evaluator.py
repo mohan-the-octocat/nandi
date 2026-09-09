@@ -2,7 +2,7 @@
 
 import dataclasses
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from src.model_armor.client import ModelArmorResponse
 

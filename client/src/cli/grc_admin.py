@@ -11,7 +11,6 @@ plugin_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__
 if plugin_root not in sys.path:
     sys.path.insert(0, plugin_root)
 
-from src.governance.audit_logger import FSIAuditLogger
 from src.governance.rbi_controls import RBIComplianceController
 from src.governance.sebi_controls import SEBIComplianceController
 from src.model_armor.client import ModelArmorClient

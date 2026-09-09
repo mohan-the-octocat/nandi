@@ -185,7 +185,8 @@ repo-root/
 │   └── README.md                    # GCP infrastructure architecture & operations
 │
 ├── bin/                             # Unified tooling & installer
-│   └── install-nandi.sh             # 5-step installer (installs client/ into IDE)
+│   ├── install-nandi.sh             # 5-step installer (installs client/ into IDE)
+│   └── setup-model-armor.sh         # Symlink to GCP/bin/setup-model-armor.sh
 └── tests/                           # Unit & end-to-end test suite
 ```
 

@@ -1,8 +1,8 @@
 """PII Redaction and Format-Preserving Masking Engine."""
 
 import re
-from typing import Dict, List, Tuple
-from src.pii_guard.entities import PIIMatch, PIICategory
+from typing import List
+from src.pii_guard.entities import PIIMatch
 
 
 class PIIRedactor:

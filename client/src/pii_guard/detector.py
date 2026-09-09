@@ -4,7 +4,7 @@ import json
 import os
 import re
 import time
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set
 
 from src.pii_guard.checksums import (
     verhoeff_validate,

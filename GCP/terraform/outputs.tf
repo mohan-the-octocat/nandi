@@ -34,9 +34,9 @@ output "audit_log_bucket_id" {
 }
 
 output "antigravity_config_yaml_snippet" {
-  description = "Configuration block ready to paste into config/config.yaml."
+  description = "Configuration block ready to paste into client/config/config.yaml."
   value       = <<EOT
-# Paste into config/config.yaml:
+# Paste into client/config/config.yaml:
 model_armor:
   enabled: true
   project_id: "${var.project_id}"

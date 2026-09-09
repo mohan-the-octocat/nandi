@@ -1,6 +1,6 @@
 # Nandi
 
-[![Plugin: Nandi](https://img.shields.io/badge/Plugin-Nandi-purple)](plugin.json)
+[![Plugin: Nandi](https://img.shields.io/badge/Plugin-Nandi-purple)](client/plugin.json)
 [![Compliance: RBI IT Governance 2023](https://img.shields.io/badge/Compliance-RBI%20IT%20Governance%202023-blue)](docs/RBI_COMPLIANCE.md)
 [![Compliance: SEBI CSCRF 2024](https://img.shields.io/badge/Compliance-SEBI%20CSCRF%202024-green)](docs/SEBI_COMPLIANCE.md)
 [![Compliance: DPDP Act 2023](https://img.shields.io/badge/Compliance-DPDP%20Act%202023-orange)](docs/RBI_COMPLIANCE.md)
@@ -34,9 +34,9 @@
    - Dual UTC & IST timestamps formatted for 7-year regulatory retention under RBI and SEBI rules.
 
 4. **Complete Regulatory Rules & Skills**:
-   - Workspace rules (`rules/rbi_governance.md`, `rules/sebi_governance.md`, `rules/pii_handling.md`).
-   - Interactive diagnostic skills (`fsi-compliance-audit`, `model-armor-diagnostics`).
-   - Administrative CLI tool (`src/cli/grc_admin.py`).
+   - Workspace rules (`client/rules/rbi_governance.md`, `client/rules/sebi_governance.md`, `client/rules/pii_handling.md`).
+   - Interactive diagnostic skills (`client/skills/fsi-compliance-audit`, `client/skills/model-armor-diagnostics`).
+   - Administrative CLI tool (`client/src/cli/grc_admin.py`).
 
 ---
 
@@ -67,7 +67,7 @@ The installer:
 2. **Authenticates**: Runs `gcloud auth application-default login` to configure Application Default Credentials (ADC) for Model Armor.
 3. **Validates GCP Project & Model Armor Template**: Validates regional REP endpoint reachability (`modelarmor.asia-south1.rep.googleapis.com`), checks existence and filter configurations of the Model Armor template (`fsi-india-compliance-template`), and executes a live prompt sanitization validation call.
 4. **Runs Test Suite**: Validates all 31 automated unit tests across PII checksums, Model Armor gates, and governance using the selected runtime.
-5. **Installs Plugin**: Binds the exact Python interpreter into `hooks.json`, configures symlinks, and registers lifecycle hooks in Antigravity.
+5. **Installs Plugin**: Binds the exact Python interpreter into `client/hooks.json`, configures symlinks, and registers lifecycle hooks in Antigravity.
 
 ### Method 2: Manual Symlink (Global)
 To manually install only the client plugin into your global Antigravity environment:
@@ -190,5 +190,4 @@ python3 client/src/cli/grc_admin.py show-audit --tail 10
 ---
 
 ## License
-Apache-2.0. Developed for Google Cloud Financial Services Customers.
 Apache-2.0. Developed for Google Cloud Financial Services Customers.
