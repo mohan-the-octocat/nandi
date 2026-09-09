@@ -6,6 +6,8 @@ The **Nandi Plugin** provides a dual-layer, fail-closed Governance, Risk, and Co
 
 Designed to meet the stringent mandates of the **Reserve Bank of India (RBI)**, the **Securities and Exchange Board of India (SEBI)**, the **Insurance Regulatory and Development Authority of India (IRDAI)**, and the **Digital Personal Data Protection (DPDP) Act, 2023**, this plugin intercepts prompt planning and tool execution events in real time.
 
+![Antigravity + Nandi Architecture](images/nandi_antigravity_architecture.jpg)
+
 ```
 +---------------------------------------------------------------------------------------------+
 |                                    ANTIGRAVITY AGENT LOOP                                    |

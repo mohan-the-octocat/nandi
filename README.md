@@ -9,6 +9,8 @@
 
 **Nandi** (*The Incorruptible Threshold Guardian*): Enterprise-grade Governance, Risk, and Compliance (GRC) Antigravity Plugin providing real-time **Indian PII Regex/Checksum Protection** and **Google Cloud Model Armor Safety Filtering** for Financial Services Institutions (Banks, NBFCs, Stock Brokers, AMCs, FinTechs) in India.
 
+![Antigravity + Nandi Architecture](docs/images/nandi_antigravity_architecture.jpg)
+
 ---
 
 ## Key Features

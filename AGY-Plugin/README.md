@@ -4,6 +4,8 @@ This directory contains the **Nandi (The Incorruptible Threshold Guardian)** plu
 
 Nandi operates directly within the developer's Antigravity IDE environment, inspecting prompts and tool executions in real-time through lifecycle hooks to enforce strict Indian Financial Services Institution (FSI) compliance and AI guardrails.
 
+![Antigravity + Nandi Architecture](../docs/images/nandi_antigravity_architecture.jpg)
+
 ---
 
 ## Directory Layout
