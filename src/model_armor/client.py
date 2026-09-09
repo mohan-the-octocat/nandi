@@ -68,7 +68,7 @@ class ModelArmorClient:
         location: str = "asia-south1",
         template_id: str = "fsi-india-compliance-template",
         endpoint: Optional[str] = None,
-        mock_mode: bool = False,
+        mock_mode: Optional[bool] = None,
         timeout_seconds: float = 5.0,
         retry_attempts: int = 2,
     ):
@@ -76,7 +76,10 @@ class ModelArmorClient:
         self.location = os.environ.get("MODEL_ARMOR_LOCATION", location)
         self.template_id = os.environ.get("MODEL_ARMOR_TEMPLATE_ID", template_id)
         self.endpoint = endpoint or os.environ.get("MODEL_ARMOR_ENDPOINT")
-        self.mock_mode = mock_mode or os.environ.get("MODEL_ARMOR_MOCK_MODE", "").lower() in ("true", "1", "yes")
+        if mock_mode is not None:
+            self.mock_mode = mock_mode
+        else:
+            self.mock_mode = os.environ.get("MODEL_ARMOR_MOCK_MODE", "").lower() in ("true", "1", "yes")
         self.timeout_seconds = timeout_seconds
         self.retry_attempts = retry_attempts
 

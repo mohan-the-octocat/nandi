@@ -42,20 +42,32 @@
 
 ## Installation & Setup in Local Antigravity 2.0
 
-You can add this plugin to your local Antigravity 2.0 instance using any of the following methods:
-
-### Method 1: Global Installation (Recommended — Available across all workspaces)
-Clone the repository directly into your local Antigravity plugins directory:
+### Method 1: Automated Installer (Recommended)
+Clone the repository and run the automated installer script:
 ```bash
-git clone https://github.com/mohan-the-octocat/nandi.git ~/.gemini/antigravity/plugins/nandi
+git clone https://github.com/mohan-the-octocat/nandi.git
+cd nandi
+./bin/install-nandi.sh
 ```
 
-*Or, if you have already cloned the repository locally, symlink it:*
+To install scoped to a specific project alone:
 ```bash
-ln -s /path/to/grc-plugin ~/.gemini/config/plugins/nandi
+./bin/install-nandi.sh --project-dir /path/to/your/project-workspace
 ```
 
-### Method 2: Workspace-Scoped Installation (Project-specific)
+The installer:
+1. **Verifies Prerequisites**: Checks for Python 3 and `gcloud` CLI.
+2. **Authenticates**: Runs `gcloud auth login` for Model Armor API credentials.
+3. **Validates Connection**: Sends a live test prompt to Google Cloud Model Armor to verify template and regional REP endpoint connectivity.
+4. **Runs Test Suite**: Validates 27 automated unit tests across PII, Model Armor, and governance.
+5. **Installs Plugin**: Configures symlinks and registers lifecycle hooks in Antigravity.
+
+### Method 2: Manual Symlink (Global)
+```bash
+ln -s /path/to/nandi ~/.gemini/config/plugins/nandi
+```
+
+### Method 3: Workspace-Scoped Installation (Project-specific)
 To enforce GRC guardrails only within a specific project or workspace repository:
 ```bash
 cd /path/to/your/project-workspace
