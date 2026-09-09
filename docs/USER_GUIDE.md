@@ -1,15 +1,15 @@
-# Antigravity FSI India Guard - Operator & Developer User Guide
+# Nandi (Antigravity FSI India Guard) - Operator & Developer User Guide
 
 ## 1. Overview
 
-The Antigravity FSI India Guard Plugin automatically activates when installed in your Antigravity environment. It inspects all user prompts before they reach the model (`PreInvocation`), and inspects all tool executions (`PreToolUse`), guaranteeing strict compliance with Indian financial regulations.
+**Nandi** (*The Incorruptible Threshold Guardian*) automatically activates when installed in your Antigravity environment. It inspects all user prompts before they reach the model (`PreInvocation`), and inspects all tool executions (`PreToolUse`), guaranteeing strict compliance with Indian financial regulations.
 
 ---
 
 ## 2. Directory Structure
 
 ```
-grc-plugin/
+nandi/ (formerly grc-plugin/)
 ├── plugin.json                 # Antigravity plugin manifest
 ├── hooks.json                  # Lifecycle hook bindings (PreInvocation, PreToolUse)
 ├── config/
