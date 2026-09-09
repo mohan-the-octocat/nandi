@@ -145,7 +145,7 @@ Once installed, verify that the lifecycle hooks and guardrails are active:
 ### 1. Provision Server-Side Model Armor & Infrastructure
 ```bash
 # Option A: Automated setup script (Quickest: enables APIs, configures IAM, creates template, tests sanitization)
-./GCP/setup-model-armor.sh
+./GCP/bin/setup-model-armor.sh
 
 # Option B: Full Terraform automation (Model Armor, Cloud DLP, 7-year logging bucket)
 cd GCP/terraform

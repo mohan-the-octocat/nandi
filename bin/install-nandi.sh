@@ -246,6 +246,7 @@ for file in "${REQUIRED_FILES[@]}"; do
 done
 
 GCP_REQUIRED_FILES=(
+  "bin/setup-model-armor.sh"
   "terraform/main.tf"
   "terraform/variables.tf"
   "terraform/outputs.tf"

@@ -38,7 +38,7 @@ These components are decoupled from the client developer plugin and are deployed
 
 | Component | Path | Description |
 |---|---|---|
-| **Setup Shell Script** | [`setup-model-armor.sh`](./setup-model-armor.sh) | End-to-end automated provisioner: verifies tools, enables APIs, assigns IAM roles, deploys the template via REP REST API, and tests live sanitization. |
+| **Setup Shell Script** | [`bin/setup-model-armor.sh`](./bin/setup-model-armor.sh) | End-to-end automated provisioner: verifies tools, enables APIs, assigns IAM roles, deploys the template via REP REST API, and tests live sanitization. |
 | **Terraform Module** | [`terraform/`](./terraform/) | Production-ready Terraform automation provisioning Model Armor, Cloud DLP, Cloud Logging audit bucket, and IAM bindings. |
 | **Model Armor Template** | [`generated_model_armor_template.json`](./generated_model_armor_template.json) | Standalone JSON payload definition for the Model Armor template (used for REST/curl deployments). |
 | **Model Armor Setup Guide** | [`MODEL_ARMOR_SETUP.md`](./MODEL_ARMOR_SETUP.md) | In-depth technical reference for Regional Endpoints, REST API invocation, and filter configuration. |
@@ -84,10 +84,10 @@ These components are decoupled from the client developer plugin and are deployed
 Run the end-to-end setup script:
 ```bash
 # Automated setup (checks tools, enables APIs, configures IAM, deploys template, verifies with test prompt)
-./GCP/setup-model-armor.sh
+./GCP/bin/setup-model-armor.sh
 
 # Or with custom project and region
-./GCP/setup-model-armor.sh --project your-gcp-project --region asia-south1
+./GCP/bin/setup-model-armor.sh --project your-gcp-project --region asia-south1
 ```
 
 ### Option B: Automated Terraform Deployment

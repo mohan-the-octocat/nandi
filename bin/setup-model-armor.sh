@@ -1,1 +1,1 @@
-../GCP/setup-model-armor.sh
+../GCP/bin/setup-model-armor.sh

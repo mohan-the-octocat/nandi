@@ -174,6 +174,8 @@ repo-root/
 │   └── src/                         # Python implementation (zero external deps)
 │
 ├── GCP/                             # Cloud Infrastructure (NOT installed into Antigravity)
+│   ├── bin/                         # Server infrastructure CLI tooling
+│   │   └── setup-model-armor.sh     # End-to-end automated Model Armor setup script
 │   ├── terraform/                   # Production-ready Terraform templates
 │   │   ├── main.tf                  # Model Armor, DLP, Logging bucket resources
 │   │   ├── variables.tf             # Project, region, and IAM variables

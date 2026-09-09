@@ -14,7 +14,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+GCP_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+REPO_ROOT="$(cd "${GCP_DIR}/.." && pwd)"
 
 # Default Configuration
 DEFAULT_PROJECT_ID="stratosphere-461622"
@@ -34,7 +35,7 @@ SKIP_AUTH=false
 
 print_usage() {
   cat <<EOF
-Usage: ./GCP/setup-model-armor.sh [OPTIONS]
+Usage: ./GCP/bin/setup-model-armor.sh [OPTIONS]
 
 Automates Google Cloud Model Armor template creation, API enablement, IAM role bindings,
 and end-to-end sanitization testing.
@@ -52,10 +53,10 @@ Options:
   -h, --help                   Display this help message
 
 Examples:
-  ./GCP/setup-model-armor.sh
-  ./GCP/setup-model-armor.sh --project my-gcp-project --region asia-south1
-  ./GCP/setup-model-armor.sh --mode terraform
-  ./GCP/setup-model-armor.sh --service-account sa-nandi-guard@my-project.iam.gserviceaccount.com
+  ./GCP/bin/setup-model-armor.sh
+  ./GCP/bin/setup-model-armor.sh --project my-gcp-project --region asia-south1
+  ./GCP/bin/setup-model-armor.sh --mode terraform
+  ./GCP/bin/setup-model-armor.sh --service-account sa-nandi-guard@my-project.iam.gserviceaccount.com
 EOF
 }
 
@@ -292,7 +293,7 @@ if [[ "${DEPLOY_MODE}" == "terraform" ]]; then
     exit 1
   fi
 
-  TF_DIR="${SCRIPT_DIR}/terraform"
+  TF_DIR="${GCP_DIR}/terraform"
   cd "${TF_DIR}"
 
   if [[ ! -f "terraform.tfvars" && -f "terraform.tfvars.example" ]]; then
