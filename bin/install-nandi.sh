@@ -5,7 +5,7 @@
 #
 # Execution Flow:
 #  1. Verify Prerequisites (Python 3 & gcloud CLI)
-#  2. Google Cloud Authentication ('gcloud auth login')
+#  2. Google Cloud Authentication ('gcloud auth application-default login')
 #  3. Validate Model Armor API with a live sample prompt
 #  4. Execute Unit Test Suite (27 tests)
 #  5. Install Nandi plugin installables (Global or Project-Scoped)
@@ -28,7 +28,7 @@ Usage: ./bin/install-nandi.sh [OPTIONS]
 
 Options:
   -p, --project-dir DIR    Install plugin scoped to a specific project alone (project-scoped)
-  --skip-auth              Skip interactive 'gcloud auth login' (e.g. if already logged in)
+  --skip-auth              Skip interactive 'gcloud auth application-default login' (e.g. if already configured)
   --skip-validation        Skip live Model Armor API validation call
   -h, --help               Show this help message
 
@@ -100,22 +100,22 @@ fi
 echo "✓ gcloud CLI verified: $(gcloud --version 2>/dev/null | head -n 1)"
 
 # ------------------------------------------------------------------------------
-# 2. Google Cloud Authentication ('gcloud auth login')
+# 2. Google Cloud Authentication ('gcloud auth application-default login')
 # ------------------------------------------------------------------------------
 echo ""
-echo "[Step 2/5] Google Cloud Authentication..."
+echo "[Step 2/5] Google Cloud Authentication (Application Default Credentials)..."
 
 if [[ "${SKIP_AUTH}" == "true" ]]; then
-  echo "✓ Skipping 'gcloud auth login' (--skip-auth specified)."
+  echo "✓ Skipping 'gcloud auth application-default login' (--skip-auth specified)."
 else
-  echo "Running 'gcloud auth login' for Model Armor API access..."
-  gcloud auth login
-  echo "✓ Google Cloud authentication completed successfully."
+  echo "Running 'gcloud auth application-default login' for Model Armor API access..."
+  gcloud auth application-default login
+  echo "✓ Google Cloud Application Default Credentials configured successfully."
 fi
 
 # Cache access token in environment for fast Python API calls if available
 if [[ -z "${GOOGLE_OAUTH_ACCESS_TOKEN:-}" && -z "${GCP_ACCESS_TOKEN:-}" ]]; then
-  TOKEN="$(gcloud auth print-access-token 2>/dev/null || true)"
+  TOKEN="$(gcloud auth application-default print-access-token 2>/dev/null || gcloud auth print-access-token 2>/dev/null || true)"
   if [[ -n "${TOKEN}" ]]; then
     export GOOGLE_OAUTH_ACCESS_TOKEN="${TOKEN}"
   fi
@@ -154,7 +154,7 @@ if not resp.success:
     print(f"   Error: {resp.error_message}")
     print(f"   Status Code: {resp.status_code}")
     print("\nInstallation aborted. Please ensure that:")
-    print("1. You have run 'gcloud auth login' with permissions to project 'stratosphere-461622'")
+    print("1. You have run 'gcloud auth application-default login' with permissions to project 'stratosphere-461622'")
     print("2. The Model Armor template exists in region 'asia-south1'")
     print("3. Your device has network access to modelarmor.asia-south1.rep.googleapis.com")
     sys.exit(1)

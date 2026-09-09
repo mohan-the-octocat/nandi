@@ -57,7 +57,7 @@ To install scoped to a specific project alone:
 
 The installer:
 1. **Verifies Prerequisites**: Checks for Python 3 and `gcloud` CLI.
-2. **Authenticates**: Runs `gcloud auth login` for Model Armor API credentials.
+2. **Authenticates**: Runs `gcloud auth application-default login` to configure Application Default Credentials (ADC) for Model Armor.
 3. **Validates Connection**: Sends a live test prompt to Google Cloud Model Armor to verify template and regional REP endpoint connectivity.
 4. **Runs Test Suite**: Validates 27 automated unit tests across PII, Model Armor, and governance.
 5. **Installs Plugin**: Configures symlinks and registers lifecycle hooks in Antigravity.
