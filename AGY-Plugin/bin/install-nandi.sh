@@ -453,13 +453,21 @@ else
   echo "✓ Model Armor connectivity verified in Step 3; full test suite skipped during installation."
 fi
 
-# Dynamically update hooks.json with absolute path and exact python interpreter
-"${PYTHON_EXEC}" - "${PLUGIN_ROOT}/hooks.json" "${PLUGIN_ROOT}" "${PYTHON_EXEC}" <<'PY'
-import json, sys
+# Ensure hooks.json uses relative paths and virtual environment python (.venv)
+"${PYTHON_EXEC}" - "${PLUGIN_ROOT}/hooks.json" "${USE_VENV}" <<'PY'
+import json, re, sys
 
-hook_path, plugin_root, python_exec = sys.argv[1], sys.argv[2], sys.argv[3]
+hook_path, use_venv = sys.argv[1], sys.argv[2]
 with open(hook_path, "r") as f:
     data = json.load(f)
+
+py_cmd = ".venv/bin/python3" if use_venv.lower() == "true" else "python3"
+
+def update_cmd(cmd_str):
+    m = re.search(r'src/hooks/([a-zA-Z0-9_]+\.py)', cmd_str)
+    if m:
+        return f"{py_cmd} src/hooks/{m.group(1)}"
+    return cmd_str
 
 for guard_name, guard_cfg in data.items():
     if not isinstance(guard_cfg, dict):
@@ -468,19 +476,21 @@ for guard_name, guard_cfg in data.items():
         items = guard_cfg.get(stage, [])
         for item in items:
             if isinstance(item, dict):
-                if "command" in item and "/src/hooks/" in item["command"]:
-                    hook_file = item["command"].split("/src/hooks/")[-1].split()[0]
-                    item["command"] = f"{python_exec} {plugin_root}/src/hooks/{hook_file}"
+                if "command" in item:
+                    item["command"] = update_cmd(item["command"])
                 for sub_hook in item.get("hooks", []):
-                    if isinstance(sub_hook, dict) and "command" in sub_hook and "/src/hooks/" in sub_hook["command"]:
-                        hook_file = sub_hook["command"].split("/src/hooks/")[-1].split()[0]
-                        sub_hook["command"] = f"{python_exec} {plugin_root}/src/hooks/{hook_file}"
+                    if isinstance(sub_hook, dict) and "command" in sub_hook:
+                        sub_hook["command"] = update_cmd(sub_hook["command"])
 
 with open(hook_path, "w") as f:
     json.dump(data, f, indent=2)
     f.write("\n")
 PY
-echo "✓ Configured hooks.json to execute using ${PYTHON_EXEC}"
+if [[ "${USE_VENV}" == "true" ]]; then
+  echo "✓ Configured hooks.json to execute using relative path (.venv/bin/python3)"
+else
+  echo "✓ Configured hooks.json to execute using relative path (python3)"
+fi
 
 # ------------------------------------------------------------------------------
 # 5. Install Nandi Plugin Installables
@@ -515,12 +525,8 @@ if [[ -n "${PROJECT_DIR}" ]]; then
   rm -f "${PROJECT_DIR}/.antigravity/plugins/nandi" "${PROJECT_DIR}/.antigravity/plugins/antigravity-fsi-india-guard"
   ln -s "${PLUGIN_ROOT}" "${PROJECT_DIR}/.antigravity/plugins/nandi"
 
-  # Symlink hooks.json directly into project customization roots so lifecycle hooks fire for this project
+  # Clean up legacy direct hooks.json symlinks in project customization root if present
   rm -f "${PROJECT_DIR}/_agents/hooks.json" "${PROJECT_DIR}/.agents/hooks.json" "${PROJECT_DIR}/.antigravity/hooks.json"
-  ln -s "${PLUGIN_ROOT}/hooks.json" "${PROJECT_DIR}/_agents/hooks.json"
-  ln -s "${PLUGIN_ROOT}/hooks.json" "${PROJECT_DIR}/.agents/hooks.json"
-  ln -s "${PLUGIN_ROOT}/hooks.json" "${PROJECT_DIR}/.antigravity/hooks.json"
-  echo "✓ Symlinked hooks.json to project customization root: ${PROJECT_DIR}/_agents/hooks.json"
 
   # Update plugins.json safely using python to preserve existing entries
   "${PYTHON_EXEC}" - "${PROJECT_DIR}/_agents/plugins.json" "${PLUGIN_ROOT}" <<'PY'

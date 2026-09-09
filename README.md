@@ -88,7 +88,7 @@ Before developers run the Nandi plugin with live Model Armor checks, the GCP clo
 Choose one of the three deployment options below:
 
 ### Option A: Automated Setup Script (Recommended & Quickest)
-An end-to-end automated shell script is provided at [`GCP/bin/setup-model-armor.sh`](file:///usr/local/google/home/mohansridharan/repos/grc-plugin/GCP/bin/setup-model-armor.sh) that handles all cloud configuration in under 2 minutes:
+An end-to-end automated shell script is provided at [`GCP/bin/setup-model-armor.sh`](GCP/bin/setup-model-armor.sh) that handles all cloud configuration in under 2 minutes:
 
 ```bash
 # 1. Run automated setup with default settings (stratosphere-461622 / asia-south1)
@@ -111,7 +111,7 @@ An end-to-end automated shell script is provided at [`GCP/bin/setup-model-armor.
 ---
 
 ### Option B: Production Terraform Automation
-For enterprises requiring GitOps-driven infrastructure management, a complete Terraform module is provided in [`GCP/terraform/`](file:///usr/local/google/home/mohansridharan/repos/grc-plugin/GCP/terraform/):
+For enterprises requiring GitOps-driven infrastructure management, a complete Terraform module is provided in [`GCP/terraform/`](GCP/terraform/):
 
 ```bash
 # 1. Navigate to Terraform directory
@@ -170,7 +170,7 @@ Once the server-side infrastructure is deployed, install the Nandi client plugin
 ---
 
 ### Method 1: Automated 5-Step Installer (Recommended)
-Run the installer script [`AGY-Plugin/bin/install-nandi.sh`](file:///usr/local/google/home/mohansridharan/repos/grc-plugin/AGY-Plugin/bin/install-nandi.sh):
+Run the installer script [`AGY-Plugin/bin/install-nandi.sh`](AGY-Plugin/bin/install-nandi.sh):
 
 ```bash
 git clone https://github.com/mohan-the-octocat/nandi.git
@@ -196,8 +196,8 @@ cd nandi
 1. **[Step 1/5] Diagnostics & Runtime Provisioning**: Probes host Python 3.8+, creates an isolated virtual environment at `AGY-Plugin/.venv`, validates standard library modules (`dataclasses`, `hashlib`, `json`, `urllib`), installs acceleration packages (`google-auth`, `pyyaml`), verifies `gcloud` account/project, and validates AGY-Plugin repository file integrity.
 2. **[Step 2/5] GCP ADC Authentication**: Launches interactive `gcloud auth application-default login` if credentials are not present.
 3. **[Step 3/5] GCP Connectivity & Template Probes**: Probes the regional REP endpoint (`modelarmor.asia-south1.rep.googleapis.com`), inspects template existence via `client.get_template()`, and executes a live prompt test.
-4. **[Step 4/5] Automated Test Suite Execution**: Runs all 31 unit tests using the provisioned runtime (`AGY-Plugin/.venv/bin/python3`).
-5. **[Step 5/5] Antigravity Plugin Registration**: Binds the active Python interpreter into `AGY-Plugin/hooks.json`, symlinks `AGY-Plugin/` to `~/.gemini/config/plugins/nandi` (or `<project>/_agents/plugins/nandi`), and registers the plugin in `plugins.json`.
+4. **[Step 4/5] Automated Test Suite Execution**: Runs all 31 unit tests using the provisioned runtime (`AGY-Plugin/.venv/bin/python3`) if `--run-tests` is passed.
+5. **[Step 5/5] Antigravity Plugin Registration**: Configures `AGY-Plugin/hooks.json` to use relative paths with `.venv/bin/python3`, symlinks `AGY-Plugin/` to `~/.gemini/config/plugins/nandi` (or `<project>/_agents/plugins/nandi`), and registers the plugin in `plugins.json`.
 
 ---
 
@@ -220,14 +220,10 @@ To enforce Nandi compliance guardrails exclusively within a single repository:
 ```bash
 cd /path/to/your/target-project
 
-# Symlink AGY-Plugin
+# Symlink AGY-Plugin to project plugins root
 mkdir -p _agents/plugins .agents/plugins
 ln -s /path/to/nandi/AGY-Plugin _agents/plugins/nandi
 ln -s /path/to/nandi/AGY-Plugin .agents/plugins/nandi
-
-# Symlink hooks directly into customization root
-ln -s /path/to/nandi/AGY-Plugin/hooks.json _agents/hooks.json
-ln -s /path/to/nandi/AGY-Plugin/hooks.json .agents/hooks.json
 ```
 
 ---
