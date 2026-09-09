@@ -47,7 +47,7 @@ You can add this plugin to your local Antigravity 2.0 instance using any of the 
 ### Method 1: Global Installation (Recommended — Available across all workspaces)
 Clone the repository directly into your local Antigravity plugins directory:
 ```bash
-git clone https://github.com/mohan-the-octocat/antigravity-fsi-india-guard.git ~/.gemini/antigravity/plugins/nandi
+git clone https://github.com/mohan-the-octocat/nandi.git ~/.gemini/antigravity/plugins/nandi
 ```
 
 *Or, if you have already cloned the repository locally, symlink it:*
@@ -60,7 +60,7 @@ To enforce GRC guardrails only within a specific project or workspace repository
 ```bash
 cd /path/to/your/project-workspace
 mkdir -p .antigravity/plugins
-git clone https://github.com/mohan-the-octocat/antigravity-fsi-india-guard.git .antigravity/plugins/nandi
+git clone https://github.com/mohan-the-octocat/nandi.git .antigravity/plugins/nandi
 ```
 
 ### Method 3: Via Antigravity 2.0 UI Settings
@@ -68,7 +68,7 @@ git clone https://github.com/mohan-the-octocat/antigravity-fsi-india-guard.git .
 2. Open **Settings** (⚙️) from the sidebar or command palette (`Ctrl/Cmd + ,`).
 3. Navigate to **Plugins & Customizations** > **Installed Plugins**.
 4. Click **Add Plugin** > **Install from Git Repository**.
-5. Paste the repository URL: `https://github.com/mohan-the-octocat/antigravity-fsi-india-guard.git`
+5. Paste the repository URL: `https://github.com/mohan-the-octocat/nandi.git`
 6. Click **Install & Enable**.
 
 ---
