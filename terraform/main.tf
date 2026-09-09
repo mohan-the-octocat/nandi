@@ -38,7 +38,7 @@ resource "google_project_service" "fsi_services" {
 resource "google_service_account" "fsi_guard_sa" {
   project      = var.project_id
   account_id   = var.service_account_id
-  display_name = "Antigravity FSI India Guard Agent Service Account"
+  display_name = "Nandi Agent Service Account"
   description  = "Dedicated service account used by Antigravity runtime to invoke Model Armor and Cloud DLP."
 
   depends_on = [google_project_service.fsi_services]

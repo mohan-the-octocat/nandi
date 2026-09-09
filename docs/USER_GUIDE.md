@@ -1,4 +1,4 @@
-# Nandi (Antigravity FSI India Guard) - Operator & Developer User Guide
+# Nandi - Operator & Developer User Guide
 
 ## 1. Overview
 

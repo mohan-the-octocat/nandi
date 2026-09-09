@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Nandi (Antigravity FSI India Guard) Installer
+# Nandi Installer
 # Installs and validates Nandi for Google Antigravity / Jetski.
 # Supports global installation or project-scoped installation (-p / --project-dir).
 # ==============================================================================
@@ -49,14 +49,14 @@ if [[ -n "${PROJECT_DIR}" ]]; then
   TARGET_PLUGINS_DIR="${PROJECT_DIR}/_agents/plugins"
   DOT_TARGET_PLUGINS_DIR="${PROJECT_DIR}/.agents/plugins"
   echo "============================================================"
-  echo "Installing Nandi - Antigravity FSI India Guard (Project Scoped Only)"
+  echo "Installing Nandi (Project Scoped Only)"
   echo "  Source Directory : ${SCRIPT_DIR}"
   echo "  Project Root     : ${PROJECT_DIR}"
   echo "  Target Directory : ${TARGET_PLUGINS_DIR}/nandi"
   echo "============================================================"
 else
   echo "============================================================"
-  echo "Installing Nandi - Antigravity FSI India Guard (Global)"
+  echo "Installing Nandi (Global)"
   echo "  Source Directory : ${SCRIPT_DIR}"
   echo "  Target Directory : ${GLOBAL_TARGET_DIR_2}/nandi"
   echo "============================================================"
@@ -144,10 +144,10 @@ fi
 echo ""
 echo "============================================================"
 if [[ -n "${PROJECT_DIR}" ]]; then
-  echo "Successfully installed Nandi - Antigravity FSI India Guard (Project Scoped Only)!"
+  echo "Successfully installed Nandi (Project Scoped Only)!"
   echo "Project Directory: ${PROJECT_DIR}"
 else
-  echo "Successfully installed Nandi - Antigravity FSI India Guard (Globally)!"
+  echo "Successfully installed Nandi (Globally)!"
 fi
 echo "Plugin is active and discoverable by Antigravity."
 echo "============================================================"

@@ -1,8 +1,8 @@
-# Nandi (Antigravity FSI India Guard) - System Architecture Document
+# Nandi - System Architecture Document
 
 ## 1. Executive Summary & Vision
 
-The **Nandi Plugin (Antigravity FSI India Guard)** provides a dual-layer, fail-closed Governance, Risk, and Compliance (GRC) enforcement gateway for Generative AI and automated developer agents operating within Indian Financial Services Institutions (FSIs).
+The **Nandi Plugin** provides a dual-layer, fail-closed Governance, Risk, and Compliance (GRC) enforcement gateway for Generative AI and automated developer agents operating within Indian Financial Services Institutions (FSIs).
 
 Designed to meet the stringent mandates of the **Reserve Bank of India (RBI)**, the **Securities and Exchange Board of India (SEBI)**, the **Insurance Regulatory and Development Authority of India (IRDAI)**, and the **Digital Personal Data Protection (DPDP) Act, 2023**, this plugin intercepts prompt planning and tool execution events in real time.
 

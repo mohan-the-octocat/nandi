@@ -1,6 +1,6 @@
-# Nandi (Antigravity FSI India Guard)
+# Nandi
 
-[![Plugin: Nandi](https://img.shields.io/badge/Plugin-Nandi%20(FSI%20Guard)-purple)](plugin.json)
+[![Plugin: Nandi](https://img.shields.io/badge/Plugin-Nandi-purple)](plugin.json)
 [![Compliance: RBI IT Governance 2023](https://img.shields.io/badge/Compliance-RBI%20IT%20Governance%202023-blue)](docs/RBI_COMPLIANCE.md)
 [![Compliance: SEBI CSCRF 2024](https://img.shields.io/badge/Compliance-SEBI%20CSCRF%202024-green)](docs/SEBI_COMPLIANCE.md)
 [![Compliance: DPDP Act 2023](https://img.shields.io/badge/Compliance-DPDP%20Act%202023-orange)](docs/RBI_COMPLIANCE.md)

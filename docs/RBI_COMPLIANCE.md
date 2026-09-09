@@ -1,6 +1,6 @@
 # Reserve Bank of India (RBI) Compliance Mapping
 
-This document provides the formal regulatory compliance mapping between the **Nandi Plugin (Antigravity FSI India Guard)** and RBI mandates governing Indian Scheduled Commercial Banks, Small Finance Banks, Payments Banks, NBFCs, and Payment System Operators.
+This document provides the formal regulatory compliance mapping between the **Nandi Plugin** and RBI mandates governing Indian Scheduled Commercial Banks, Small Finance Banks, Payments Banks, NBFCs, and Payment System Operators.
 
 ---
 

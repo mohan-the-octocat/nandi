@@ -1,4 +1,4 @@
-"""Antigravity FSI India Guard - PII Detection & Redaction Engine."""
+"""Nandi - PII Detection & Redaction Engine."""
 
 from src.pii_guard.checksums import (
     verhoeff_validate,

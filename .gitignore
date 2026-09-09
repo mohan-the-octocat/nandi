@@ -55,3 +55,7 @@ terraform/*.tfstate
 terraform/*.tfstate.*
 terraform/terraform.tfvars
 terraform/generated_model_armor_template.json
+
+.agents/*
+_agents/*
+.antigravity/*

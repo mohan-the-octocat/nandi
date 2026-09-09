@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Master Test Runner for Antigravity FSI India Guard Plugin."""
+"""Master Test Runner for Nandi Plugin."""
 
 import os
 import sys
@@ -14,7 +14,7 @@ if plugin_root not in sys.path:
 
 def main():
     print("=" * 80)
-    print(" NANDI (ANTIGRAVITY FSI INDIA GUARD) - TEST SUITE RUNNER")
+    print(" NANDI - TEST SUITE RUNNER")
     print("=" * 80)
 
     loader = unittest.TestLoader()

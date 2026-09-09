@@ -1,6 +1,6 @@
 # SEBI Cybersecurity & Cyber Resilience Framework (CSCRF 2024) Compliance Mapping
 
-This document details the compliance architecture of **Nandi (Antigravity FSI India Guard)** for Securities and Exchange Board of India (SEBI) regulated entities, including Stock Brokers, Asset Management Companies (AMCs), Depositories, and Qualified RTAs.
+This document details the compliance architecture of **Nandi** for Securities and Exchange Board of India (SEBI) regulated entities, including Stock Brokers, Asset Management Companies (AMCs), Depositories, and Qualified RTAs.
 
 ---
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Antigravity FSI India Guard - Administrator & Compliance CLI Tool."""
+"""Nandi - Administrator & Compliance CLI Tool."""
 
 import argparse
 import json
@@ -37,7 +37,7 @@ def cmd_test_prompt(args: argparse.Namespace) -> None:
     """Tests a prompt against both PII Regex and Model Armor security filters."""
     prompt = args.prompt
     print("=" * 80)
-    print(" ANTIGRAVITY FSI INDIA GUARD - PROMPT COMPLIANCE & SAFETY INSPECTION")
+    print(" NANDI - PROMPT COMPLIANCE & SAFETY INSPECTION")
     print("=" * 80)
     print(f"Prompt: {prompt}\n")
 
@@ -192,7 +192,7 @@ def cmd_verify_compliance(args: argparse.Namespace) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Antigravity FSI India Guard Admin CLI")
+    parser = argparse.ArgumentParser(description="Nandi Admin CLI")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     # test-prompt
