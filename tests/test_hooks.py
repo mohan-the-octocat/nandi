@@ -28,7 +28,7 @@ class TestHooks(unittest.TestCase):
             env.update(env_override)
 
         p = subprocess.Popen(
-            ["python3", full_script_path],
+            [sys.executable, full_script_path],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,

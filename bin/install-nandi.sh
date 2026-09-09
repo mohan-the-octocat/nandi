@@ -4,7 +4,7 @@
 # The Incorruptible Threshold Guardian for Google Antigravity.
 #
 # Execution Flow:
-#  1. Local Environment & Library Diagnostics (Python 3.8+, core stdlib, gcloud CLI, local files)
+#  1. Local Environment & Library Diagnostics (Hermetic .venv by default, Python 3.8+, core stdlib, gcloud CLI, local files)
 #  2. Google Cloud Authentication ('gcloud auth application-default login')
 #  3. Google Cloud Project & Model Armor Template Diagnostics (REP endpoint, template inspection, live prompt sanitization)
 #  4. Execute Unit Test Suite (31 tests)
@@ -19,6 +19,8 @@ GLOBAL_TARGET_DIR_1="${HOME}/.gemini/antigravity/plugins"
 GLOBAL_TARGET_DIR_2="${HOME}/.gemini/config/plugins"
 
 PROJECT_DIR=""
+USE_VENV=true
+RECREATE_VENV=false
 SKIP_AUTH=false
 SKIP_VALIDATION=false
 
@@ -28,12 +30,15 @@ Usage: ./bin/install-nandi.sh [OPTIONS]
 
 Options:
   -p, --project-dir DIR    Install plugin scoped to a specific project alone (project-scoped)
+  --system                 Use host system python3 instead of isolated .venv (override default)
+  --recreate-venv          Recreate the isolated .venv environment from scratch
   --skip-auth              Skip interactive 'gcloud auth application-default login' (e.g. if already configured)
   --skip-validation        Skip live Model Armor API validation call
   -h, --help               Show this help message
 
 Examples:
-  ./bin/install-nandi.sh
+  ./bin/install-nandi.sh                 # Default: installs with hermetic .venv
+  ./bin/install-nandi.sh --system        # Override: uses host system python3
   ./bin/install-nandi.sh --project-dir /path/to/my-project
   ./bin/install-nandi.sh -p .
   ./bin/install-nandi.sh --skip-auth
@@ -46,6 +51,14 @@ while [[ $# -gt 0 ]]; do
       mkdir -p "$2"
       PROJECT_DIR="$(cd "$2" && pwd)"
       shift 2
+      ;;
+    --system)
+      USE_VENV=false
+      shift
+      ;;
+    --recreate-venv)
+      RECREATE_VENV=true
+      shift
       ;;
     --skip-auth)
       SKIP_AUTH=true
@@ -71,6 +84,11 @@ echo "============================================================"
 echo " Nandi Installer (The Incorruptible Threshold Guardian)"
 echo "============================================================"
 echo "Plugin Root Directory: ${PLUGIN_ROOT}"
+if [[ "${USE_VENV}" == "true" ]]; then
+  echo "Python Runtime Mode  : Isolated Virtual Environment (${PLUGIN_ROOT}/.venv)"
+else
+  echo "Python Runtime Mode  : Host System Python3 (--system override)"
+fi
 if [[ -n "${PROJECT_DIR}" ]]; then
   TARGET_PLUGINS_DIR="${PROJECT_DIR}/_agents/plugins"
   DOT_TARGET_PLUGINS_DIR="${PROJECT_DIR}/.agents/plugins"
@@ -86,27 +104,59 @@ echo "============================================================"
 echo ""
 echo "[Step 1/5] Local Environment & Library Diagnostics..."
 
-# 1.1 Python runtime and version check (require >= 3.8)
+# 1.1 Host Python runtime and version check (require >= 3.8)
 if ! command -v python3 &> /dev/null; then
   echo "❌ Error: python3 is not installed or not available on PATH." >&2
-  echo "   Nandi requires Python 3.8+ for hooks, CLI, and checksum validators." >&2
+  echo "   Nandi requires Python 3.8+ for hooks, CLI, and virtual environment provisioning." >&2
   exit 1
 fi
 
-PYTHON_BIN="$(command -v python3)"
-PYTHON_VER="$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}")')"
-PYTHON_MAJOR="$(python3 -c 'import sys; print(sys.version_info.major)')"
-PYTHON_MINOR="$(python3 -c 'import sys; print(sys.version_info.minor)')"
+HOST_PYTHON_BIN="$(command -v python3)"
+HOST_PYTHON_VER="$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}")')"
+HOST_PYTHON_MAJOR="$(python3 -c 'import sys; print(sys.version_info.major)')"
+HOST_PYTHON_MINOR="$(python3 -c 'import sys; print(sys.version_info.minor)')"
 
-if [[ "${PYTHON_MAJOR}" -lt 3 ]] || [[ "${PYTHON_MAJOR}" -eq 3 && "${PYTHON_MINOR}" -lt 8 ]]; then
-  echo "❌ Error: Python version ${PYTHON_VER} is below minimum requirement (>= 3.8)." >&2
+if [[ "${HOST_PYTHON_MAJOR}" -lt 3 ]] || [[ "${HOST_PYTHON_MAJOR}" -eq 3 && "${HOST_PYTHON_MINOR}" -lt 8 ]]; then
+  echo "❌ Error: Host Python version ${HOST_PYTHON_VER} is below minimum requirement (>= 3.8)." >&2
   echo "   Please upgrade Python 3 to version 3.8 or later." >&2
   exit 1
 fi
-echo "  ✓ python3 runtime verified: ${PYTHON_BIN} (v${PYTHON_VER})"
+echo "  ✓ Host python3 runtime verified: ${HOST_PYTHON_BIN} (v${HOST_PYTHON_VER})"
 
-# 1.2 Core standard library modules check
-python3 - "${PLUGIN_ROOT}" <<'PY'
+# 1.2 Virtual Environment Provisioning (Default) or System Override
+VENV_DIR="${PLUGIN_ROOT}/.venv"
+if [[ "${USE_VENV}" == "true" ]]; then
+  if [[ "${RECREATE_VENV}" == "true" && -d "${VENV_DIR}" ]]; then
+    echo "  Recreating virtual environment at ${VENV_DIR}..."
+    rm -rf "${VENV_DIR}"
+  fi
+
+  if [[ ! -d "${VENV_DIR}" ]]; then
+    echo "  Initializing isolated virtual environment at ${VENV_DIR}..."
+    python3 -m venv "${VENV_DIR}"
+    echo "  ✓ Virtual environment initialized: ${VENV_DIR}"
+  else
+    echo "  ✓ Existing virtual environment detected: ${VENV_DIR}"
+  fi
+
+  PYTHON_EXEC="${VENV_DIR}/bin/python3"
+  if [[ ! -x "${PYTHON_EXEC}" ]]; then
+    echo "❌ Error: Virtual environment python binary not executable: ${PYTHON_EXEC}" >&2
+    exit 1
+  fi
+
+  # Attempt installing optional acceleration packages in .venv if pip is available
+  if [[ -x "${VENV_DIR}/bin/pip" ]]; then
+    echo "  Checking optional acceleration packages in .venv (google-auth, pyyaml)..."
+    "${VENV_DIR}/bin/pip" install --quiet google-auth pyyaml 2>/dev/null || true
+  fi
+else
+  PYTHON_EXEC="${HOST_PYTHON_BIN}"
+  echo "  ℹ Using host system python3 (--system override active): ${PYTHON_EXEC}"
+fi
+
+# 1.3 Core standard library modules check using target PYTHON_EXEC
+"${PYTHON_EXEC}" - "${PLUGIN_ROOT}" <<'PY'
 import sys
 required_modules = [
     "dataclasses",
@@ -129,29 +179,29 @@ for mod in required_modules:
         missing.append(mod)
 
 if missing:
-    print(f"❌ Missing requisite Python modules: {', '.join(missing)}", file=sys.stderr)
-    print("   Please ensure your Python installation includes standard library modules.", file=sys.stderr)
+    print(f"❌ Missing requisite Python modules in runtime: {', '.join(missing)}", file=sys.stderr)
+    print("   Please ensure your Python runtime includes standard library modules.", file=sys.stderr)
     sys.exit(1)
-print(f"  ✓ Requisite Python standard libraries verified ({len(required_modules)} modules)")
+print(f"  ✓ Requisite Python standard libraries verified ({len(required_modules)} modules) in {sys.executable}")
 PY
 
-# 1.3 Optional acceleration & configuration packages
-python3 - <<'PY'
+# 1.4 Optional acceleration & configuration packages check in PYTHON_EXEC
+"${PYTHON_EXEC}" - <<'PY'
 try:
     import google.auth
     import google.auth.transport.requests
-    print("  ✓ google-auth detected (high-performance in-process ADC token acquisition enabled)")
+    print("  ✓ google-auth detected in runtime (high-performance in-process ADC token acquisition enabled)")
 except ImportError:
-    print("  ℹ google-auth not installed (falling back to gcloud CLI token extraction; 'pip install google-auth' recommended for lower hook latency)")
+    print("  ℹ google-auth not installed in runtime (falling back to gcloud CLI token extraction; lower hook latency with 'pip install google-auth')")
 
 try:
     import yaml
-    print("  ✓ pyyaml detected (YAML configuration parsing enabled)")
+    print("  ✓ pyyaml detected in runtime (YAML configuration parsing enabled)")
 except ImportError:
-    print("  ℹ pyyaml not installed (standard JSON fallback configuration parser active)")
+    print("  ℹ pyyaml not installed in runtime (standard JSON fallback configuration parser active)")
 PY
 
-# 1.4 Google Cloud SDK (gcloud CLI) verification
+# 1.5 Google Cloud SDK (gcloud CLI) verification
 if ! command -v gcloud &> /dev/null; then
   echo "❌ Error: Google Cloud SDK ('gcloud' CLI) is not installed or not on PATH." >&2
   echo "   Google Cloud Model Armor requires gcloud for authentication, ADC tokens, and project management." >&2
@@ -167,7 +217,7 @@ echo "  ✓ gcloud CLI verified: ${GCLOUD_BIN} (${GCLOUD_VER})"
 echo "    Active gcloud Account : ${GCLOUD_ACCOUNT}"
 echo "    Active gcloud Project : ${GCLOUD_PROJECT}"
 
-# 1.5 Local repository file & hook integrity check
+# 1.6 Local repository file & hook integrity check
 REQUIRED_FILES=(
   "plugin.json"
   "hooks.json"
@@ -223,7 +273,7 @@ echo "[Step 3/5] Google Cloud Project & Model Armor Template Diagnostics..."
 if [[ "${SKIP_VALIDATION}" == "true" ]]; then
   echo "  ✓ Skipping Google Cloud project & Model Armor validation (--skip-validation specified)."
 else
-  python3 - "${PLUGIN_ROOT}" <<'PY'
+  "${PYTHON_EXEC}" - "${PLUGIN_ROOT}" <<'PY'
 import json
 import os
 import socket
@@ -369,19 +419,37 @@ echo "[Step 4/5] Running Test Suite..."
 chmod +x "${PLUGIN_ROOT}"/src/hooks/*.py "${PLUGIN_ROOT}/src/cli/grc_admin.py" "${SCRIPT_DIR}/install-nandi.sh"
 echo "✓ Made hook entrypoints and CLI executable"
 
-python3 "${PLUGIN_ROOT}/tests/run_all_tests.py"
+"${PYTHON_EXEC}" "${PLUGIN_ROOT}/tests/run_all_tests.py"
 echo "✓ All 31 unit tests passed successfully"
 
-# Dynamically update hooks.json with absolute path to this clone's hook entrypoints
-python3 - "${PLUGIN_ROOT}/hooks.json" "${PLUGIN_ROOT}" <<'PY'
-import sys, re
-hook_path, plugin_root = sys.argv[1], sys.argv[2]
+# Dynamically update hooks.json with absolute path and exact python interpreter
+"${PYTHON_EXEC}" - "${PLUGIN_ROOT}/hooks.json" "${PLUGIN_ROOT}" "${PYTHON_EXEC}" <<'PY'
+import json, sys
+
+hook_path, plugin_root, python_exec = sys.argv[1], sys.argv[2], sys.argv[3]
 with open(hook_path, "r") as f:
-    content = f.read()
-content = re.sub(r'python3\s+.*?/src/hooks/', f'python3 {plugin_root}/src/hooks/', content)
+    data = json.load(f)
+
+for guard_name, guard_cfg in data.items():
+    if not isinstance(guard_cfg, dict):
+        continue
+    for stage in ["PreInvocation", "PreToolUse"]:
+        items = guard_cfg.get(stage, [])
+        for item in items:
+            if isinstance(item, dict):
+                if "command" in item and "/src/hooks/" in item["command"]:
+                    hook_file = item["command"].split("/src/hooks/")[-1].split()[0]
+                    item["command"] = f"{python_exec} {plugin_root}/src/hooks/{hook_file}"
+                for sub_hook in item.get("hooks", []):
+                    if isinstance(sub_hook, dict) and "command" in sub_hook and "/src/hooks/" in sub_hook["command"]:
+                        hook_file = sub_hook["command"].split("/src/hooks/")[-1].split()[0]
+                        sub_hook["command"] = f"{python_exec} {plugin_root}/src/hooks/{hook_file}"
+
 with open(hook_path, "w") as f:
-    f.write(content)
+    json.dump(data, f, indent=2)
+    f.write("\n")
 PY
+echo "✓ Configured hooks.json to execute using ${PYTHON_EXEC}"
 
 # ------------------------------------------------------------------------------
 # 5. Install Nandi Plugin Installables
@@ -424,7 +492,7 @@ if [[ -n "${PROJECT_DIR}" ]]; then
   echo "✓ Symlinked hooks.json to project customization root: ${PROJECT_DIR}/_agents/hooks.json"
 
   # Update plugins.json safely using python to preserve existing entries
-  python3 - "${PROJECT_DIR}/_agents/plugins.json" "${PLUGIN_ROOT}" <<'PY'
+  "${PYTHON_EXEC}" - "${PROJECT_DIR}/_agents/plugins.json" "${PLUGIN_ROOT}" <<'PY'
 import json, os, sys
 path, plugin_dir = sys.argv[1], sys.argv[2]
 data = {"entries": []}

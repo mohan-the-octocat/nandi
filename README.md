@@ -50,17 +50,24 @@ cd nandi
 ./bin/install-nandi.sh
 ```
 
+By default, the installer provisions an isolated, hermetic virtual environment at `<PLUGIN_ROOT>/.venv` and installs optional acceleration packages (`google-auth`, `pyyaml`).
+
+To override and use host system Python instead of `.venv`:
+```bash
+./bin/install-nandi.sh --system
+```
+
 To install scoped to a specific project alone:
 ```bash
 ./bin/install-nandi.sh --project-dir /path/to/your/project-workspace
 ```
 
 The installer:
-1. **Performs Local Environment & Library Diagnostics**: Verifies Python 3.8+ runtime, validates core standard library modules (`dataclasses`, `hashlib`, `json`, `urllib`, etc.), probes optional acceleration packages (`google-auth`, `pyyaml`), checks `gcloud` CLI presence/account/project, and verifies repository file integrity.
+1. **Performs Local Environment & Runtime Diagnostics**: Verifies host Python 3.8+, provisions an isolated `.venv` environment (or uses host Python if `--system` is specified), validates core standard library modules (`dataclasses`, `hashlib`, `json`, `urllib`, etc.), installs/probes optional acceleration packages (`google-auth`, `pyyaml`), checks `gcloud` CLI presence/account/project, and verifies repository file integrity.
 2. **Authenticates**: Runs `gcloud auth application-default login` to configure Application Default Credentials (ADC) for Model Armor.
 3. **Validates GCP Project & Model Armor Template**: Validates regional REP endpoint reachability (`modelarmor.asia-south1.rep.googleapis.com`), checks existence and filter configurations of the Model Armor template (`fsi-india-compliance-template`), and executes a live prompt sanitization validation call.
-4. **Runs Test Suite**: Validates all 31 automated unit tests across PII checksums, Model Armor gates, and governance.
-5. **Installs Plugin**: Configures symlinks and registers lifecycle hooks in Antigravity.
+4. **Runs Test Suite**: Validates all 31 automated unit tests across PII checksums, Model Armor gates, and governance using the selected runtime.
+5. **Installs Plugin**: Binds the exact Python interpreter into `hooks.json`, configures symlinks, and registers lifecycle hooks in Antigravity.
 
 ### Method 2: Manual Symlink (Global)
 ```bash
