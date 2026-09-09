@@ -136,15 +136,9 @@ fi
 
 # 1.2 Resolve target project ID
 if [[ -z "${PROJECT_ID}" ]]; then
-  DETECTED_PROJECT="$(gcloud config get-value project 2>/dev/null || echo "")"
-  if [[ -z "${DETECTED_PROJECT}" || "${DETECTED_PROJECT}" == "(unset)" || "${DETECTED_PROJECT}" =~ ^cloudtop-prod ]]; then
-    if [[ "${DETECTED_PROJECT}" =~ ^cloudtop-prod ]]; then
-      echo "  ℹ Note: Detected internal Cloudtop host project ('${DETECTED_PROJECT}')."
-      echo "    Defaulting target project to '${DEFAULT_PROJECT_ID}'."
-    fi
+  PROJECT_ID="$(gcloud config get-value project 2>/dev/null || echo "")"
+  if [[ -z "${PROJECT_ID}" || "${PROJECT_ID}" == "(unset)" ]]; then
     PROJECT_ID="${DEFAULT_PROJECT_ID}"
-  else
-    PROJECT_ID="${DETECTED_PROJECT}"
   fi
 fi
 
