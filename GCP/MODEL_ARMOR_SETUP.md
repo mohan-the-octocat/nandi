@@ -2,7 +2,30 @@
 
 This guide describes how to configure Google Cloud Model Armor in project `stratosphere-461622` in the `asia-south1` (Mumbai) region for production deployment.
 
-## 1. Automated Setup via Terraform (Recommended)
+## 1. Automated Setup via Shell Script (Quickest & Recommended)
+
+An end-to-end setup script is provided at [`GCP/setup-model-armor.sh`](./setup-model-armor.sh) that automates:
+1. Preflight tool & authentication checks (`gcloud`, `curl`, `python3`, OAuth token).
+2. Service API enablement (`modelarmor.googleapis.com`, `dlp.googleapis.com`, `logging.googleapis.com`).
+3. IAM RBAC role configuration (`roles/modelarmor.user`, `roles/modelarmor.viewer`).
+4. Model Armor template creation and synchronization via Regional Endpoints (`modelarmor.asia-south1.rep.googleapis.com`).
+5. Live test prompt sanitization validation (`:sanitizeUserPrompt`) with sample jailbreak payload.
+
+### Running the Setup Script:
+```bash
+# Direct execution from GCP directory:
+./GCP/setup-model-armor.sh
+
+# Or from repository root:
+./bin/setup-model-armor.sh
+
+# With custom project or region:
+./GCP/setup-model-armor.sh --project your-gcp-project --region asia-south1
+```
+
+---
+
+## 2. Automated Setup via Terraform
 
 A complete, production-ready Terraform module is provided in [`terraform/`](./terraform/) that automatically configures:
 - Model Armor API and template resources in domestic Indian regions (`asia-south1` or `asia-south2`).
@@ -21,7 +44,7 @@ terraform apply
 
 ---
 
-## 2. Manual Architecture & IAM Requirements
+## 3. Manual Architecture & IAM Requirements
 
 Model Armor provides real-time sanitization and filtering for LLMs.
 
