@@ -47,14 +47,22 @@ Thumbs.db
 
 # Dynamic Logs (preserve directory via .gitkeep)
 logs/*.log
+client/logs/*.log
 
-# Terraform local state and files
+# Terraform local state and files in GCP/
 terraform/.terraform/
 terraform/.terraform.lock.hcl
 terraform/*.tfstate
 terraform/*.tfstate.*
 terraform/terraform.tfvars
 terraform/generated_model_armor_template.json
+GCP/terraform/.terraform/
+GCP/terraform/.terraform.lock.hcl
+GCP/terraform/*.tfstate
+GCP/terraform/*.tfstate.*
+GCP/terraform/terraform.tfvars
+GCP/terraform/generated_model_armor_template.json
+GCP/generated_model_armor_template.json
 
 .agents/*
 _agents/*

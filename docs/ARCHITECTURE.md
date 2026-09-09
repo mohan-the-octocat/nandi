@@ -155,3 +155,39 @@ sequenceDiagram
 | **Card Data Compromise** | Developer running commands with raw 16-digit PANs or CVVs. | Automated PreToolUse command line argument inspection and hard deny. | RBI Digital Payment Security Controls (2021) |
 | **Phishing / Malicious URIs** | Model or user prompted to fetch scripts from unapproved domains. | Model Armor Malicious URI filter cross-referenced with Google Safe Browsing and enterprise threat lists. | SEBI CSCRF 2024 (Rule 5.3) |
 | **Log Tampering & Repudiation** | Malicious alteration of local audit logs to conceal data breaches. | Cryptographic SHA-256 forward-chained hashing. | RBI Master Direction 2023 (Para 22), SEBI CSCRF 2024 (Rule 8.4) |
+
+---
+
+## 6. Decoupled Client Plugin & GCP Server Architecture
+
+Nandi enforces a clean architectural separation between **Client-Side Plugin Controls** and **Server-Side GCP Infrastructure**:
+
+```
+repo-root/
+├── client/                          # Antigravity Developer Plugin (Installed)
+│   ├── config/                      # Local PII & Model Armor policy configs
+│   ├── hooks.json                   # PreInvocation & PreToolUse lifecycle hooks
+│   ├── logs/                        # Local tamper-evident audit logs
+│   ├── plugin.json                  # Antigravity plugin manifest
+│   ├── rules/                       # Ambient developer compliance rules
+│   ├── skills/                      # Compliance audit and diagnostic skills
+│   └── src/                         # Python implementation (zero external deps)
+│
+├── GCP/                             # Cloud Infrastructure (NOT installed into Antigravity)
+│   ├── terraform/                   # Production-ready Terraform templates
+│   │   ├── main.tf                  # Model Armor, DLP, Logging bucket resources
+│   │   ├── variables.tf             # Project, region, and IAM variables
+│   │   └── outputs.tf               # Regional endpoints and resource IDs
+│   ├── generated_model_armor_template.json # Standalone REST API payload
+│   ├── MODEL_ARMOR_SETUP.md         # In-depth server deployment guide
+│   └── README.md                    # GCP infrastructure architecture & operations
+│
+├── bin/                             # Unified tooling & installer
+│   └── install-nandi.sh             # 5-step installer (installs client/ into IDE)
+└── tests/                           # Unit & end-to-end test suite
+```
+
+### Separation Guarantees
+1. **Zero Cloud Infrastructure in Plugin**: When `bin/install-nandi.sh` installs the plugin into `~/.gemini/config/plugins/nandi` or `<project>/_agents/plugins/nandi`, it symlinks exclusively `${REPO_ROOT}/client`. The server infrastructure (`GCP/`) and Terraform state are never copied or linked into the developer IDE.
+2. **Centralized Infrastructure Governance**: Cloud engineers and DevSecOps teams maintain and apply Terraform from `GCP/terraform` independently of developer plugin installations.
+3. **Hermetic Client Execution**: The client runs in an isolated Python `.venv` with zero mandatory pip dependencies, executing local regex checks in sub-millisecond time before invoking GCP Model Armor regional endpoints.

@@ -13,7 +13,9 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+PLUGIN_ROOT="${REPO_ROOT}/client"
+GCP_ROOT="${REPO_ROOT}/GCP"
 
 GLOBAL_TARGET_DIR_1="${HOME}/.gemini/antigravity/plugins"
 GLOBAL_TARGET_DIR_2="${HOME}/.gemini/config/plugins"
@@ -83,7 +85,9 @@ done
 echo "============================================================"
 echo " Nandi Installer (The Incorruptible Threshold Guardian)"
 echo "============================================================"
-echo "Plugin Root Directory: ${PLUGIN_ROOT}"
+echo "Repository Root Directory : ${REPO_ROOT}"
+echo "Client Plugin Directory   : ${PLUGIN_ROOT}"
+echo "GCP Server Infrastructure : ${GCP_ROOT}"
 if [[ "${USE_VENV}" == "true" ]]; then
   echo "Python Runtime Mode  : Isolated Virtual Environment (${PLUGIN_ROOT}/.venv)"
 else
@@ -235,12 +239,27 @@ REQUIRED_FILES=(
 
 for file in "${REQUIRED_FILES[@]}"; do
   if [[ ! -f "${PLUGIN_ROOT}/${file}" ]]; then
-    echo "❌ Missing required repository file: ${file}" >&2
+    echo "❌ Missing required client plugin file: ${file}" >&2
     echo "   Please verify that your git repository clone is complete and intact." >&2
     exit 1
   fi
 done
-echo "  ✓ Local repository integrity verified (${#REQUIRED_FILES[@]} essential files checked)"
+
+GCP_REQUIRED_FILES=(
+  "terraform/main.tf"
+  "terraform/variables.tf"
+  "terraform/outputs.tf"
+  "generated_model_armor_template.json"
+)
+
+for file in "${GCP_REQUIRED_FILES[@]}"; do
+  if [[ ! -f "${GCP_ROOT}/${file}" ]]; then
+    echo "❌ Missing required GCP server infrastructure file: ${file}" >&2
+    echo "   Please verify that the GCP server directory is complete and intact." >&2
+    exit 1
+  fi
+done
+echo "  ✓ Local client and GCP repository integrity verified"
 
 # ------------------------------------------------------------------------------
 # 2. Google Cloud Authentication ('gcloud auth application-default login')
@@ -273,13 +292,14 @@ echo "[Step 3/5] Google Cloud Project & Model Armor Template Diagnostics..."
 if [[ "${SKIP_VALIDATION}" == "true" ]]; then
   echo "  ✓ Skipping Google Cloud project & Model Armor validation (--skip-validation specified)."
 else
-  "${PYTHON_EXEC}" - "${PLUGIN_ROOT}" <<'PY'
+  "${PYTHON_EXEC}" - "${PLUGIN_ROOT}" "${GCP_ROOT}" <<'PY'
 import json
 import os
 import socket
 import sys
 
 plugin_root = sys.argv[1]
+gcp_root = sys.argv[2]
 if plugin_root not in sys.path:
     sys.path.insert(0, plugin_root)
 
@@ -322,7 +342,7 @@ if not template_res.get("success"):
         print("\n[DIAGNOSTIC] Model Armor Template NOT FOUND in GCP Project.")
         print(f"  The template '{client.template_id}' does not exist in projects/{client.project_id}/locations/{client.location}.")
         print("\n  Remediation Option A (Automated Terraform):")
-        print(f"    cd {plugin_root}/terraform")
+        print(f"    cd {gcp_root}/terraform")
         print("    cp terraform.tfvars.example terraform.tfvars")
         print(f"    # Ensure project_id=\"{client.project_id}\" and region=\"{client.location}\" are set")
         print("    terraform init && terraform apply")
@@ -332,8 +352,8 @@ if not template_res.get("success"):
         print(f"      -H \"Content-Type: application/json; charset=utf-8\" \\")
         print(f"      -H \"X-Goog-User-Project: {client.project_id}\" \\")
         print(f"      \"https://{endpoint_host}/v1/projects/{client.project_id}/locations/{client.location}/templates?templateId={client.template_id}\" \\")
-        print(f"      -d @{plugin_root}/terraform/generated_model_armor_template.json")
-        print(f"\n  Refer to {plugin_root}/docs/MODEL_ARMOR_SETUP.md for complete configuration details.")
+        print(f"      -d @{gcp_root}/generated_model_armor_template.json")
+        print(f"\n  Refer to {gcp_root}/MODEL_ARMOR_SETUP.md for complete configuration details.")
     elif status_code == 403:
         print("\n[DIAGNOSTIC] PERMISSION DENIED accessing Model Armor in GCP Project.")
         print(f"  The authenticated identity lacks required IAM permissions on project '{client.project_id}'.")
@@ -419,7 +439,7 @@ echo "[Step 4/5] Running Test Suite..."
 chmod +x "${PLUGIN_ROOT}"/src/hooks/*.py "${PLUGIN_ROOT}/src/cli/grc_admin.py" "${SCRIPT_DIR}/install-nandi.sh"
 echo "✓ Made hook entrypoints and CLI executable"
 
-"${PYTHON_EXEC}" "${PLUGIN_ROOT}/tests/run_all_tests.py"
+"${PYTHON_EXEC}" "${REPO_ROOT}/tests/run_all_tests.py"
 echo "✓ All 31 unit tests passed successfully"
 
 # Dynamically update hooks.json with absolute path and exact python interpreter

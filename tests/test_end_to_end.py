@@ -4,9 +4,12 @@ import os
 import sys
 import unittest
 
-plugin_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if plugin_root not in sys.path:
-    sys.path.insert(0, plugin_root)
+repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+client_root = os.path.join(repo_root, "client")
+if client_root not in sys.path:
+    sys.path.insert(0, client_root)
+if repo_root not in sys.path:
+    sys.path.insert(0, repo_root)
 
 from src.governance.audit_logger import FSIAuditLogger
 from src.model_armor.client import ModelArmorClient, ModelArmorResponse

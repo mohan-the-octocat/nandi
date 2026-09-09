@@ -4,7 +4,7 @@ This guide describes how to configure Google Cloud Model Armor in project `strat
 
 ## 1. Automated Setup via Terraform (Recommended)
 
-A complete, production-ready Terraform module is provided in [`terraform/`](../terraform/) that automatically configures:
+A complete, production-ready Terraform module is provided in [`terraform/`](./terraform/) that automatically configures:
 - Model Armor API and template resources in domestic Indian regions (`asia-south1` or `asia-south2`).
 - Dedicated Antigravity Agent Service Account with `roles/modelarmor.user` and `roles/logging.logWriter`.
 - Cloud DLP inspection template for Indian financial and identity infoTypes (Aadhaar, PAN, GSTIN, Cards).
@@ -12,7 +12,7 @@ A complete, production-ready Terraform module is provided in [`terraform/`](../t
 
 ### Terraform Quickstart:
 ```bash
-cd terraform
+cd GCP/terraform
 cp terraform.tfvars.example terraform.tfvars
 # Set your project_id and region in terraform.tfvars
 terraform init

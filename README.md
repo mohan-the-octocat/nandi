@@ -4,7 +4,7 @@
 [![Compliance: RBI IT Governance 2023](https://img.shields.io/badge/Compliance-RBI%20IT%20Governance%202023-blue)](docs/RBI_COMPLIANCE.md)
 [![Compliance: SEBI CSCRF 2024](https://img.shields.io/badge/Compliance-SEBI%20CSCRF%202024-green)](docs/SEBI_COMPLIANCE.md)
 [![Compliance: DPDP Act 2023](https://img.shields.io/badge/Compliance-DPDP%20Act%202023-orange)](docs/RBI_COMPLIANCE.md)
-[![Security: Google Cloud Model Armor](https://img.shields.io/badge/Security-Google%20Cloud%20Model%20Armor-red)](docs/MODEL_ARMOR_SETUP.md)
+[![Security: Google Cloud Model Armor](https://img.shields.io/badge/Security-Google%20Cloud%20Model%20Armor-red)](GCP/MODEL_ARMOR_SETUP.md)
 [![Test Suite: 100% Pass](https://img.shields.io/badge/Tests-31%2F31%20Passing-brightgreen)](tests/run_all_tests.py)
 
 **Nandi** (*The Incorruptible Threshold Guardian*): Enterprise-grade Governance, Risk, and Compliance (GRC) Antigravity Plugin providing real-time **Indian PII Regex/Checksum Protection** and **Google Cloud Model Armor Safety Filtering** for Financial Services Institutions (Banks, NBFCs, Stock Brokers, AMCs, FinTechs) in India.
@@ -70,8 +70,9 @@ The installer:
 5. **Installs Plugin**: Binds the exact Python interpreter into `hooks.json`, configures symlinks, and registers lifecycle hooks in Antigravity.
 
 ### Method 2: Manual Symlink (Global)
+To manually install only the client plugin into your global Antigravity environment:
 ```bash
-ln -s /path/to/nandi ~/.gemini/config/plugins/nandi
+ln -s /path/to/nandi/client ~/.gemini/config/plugins/nandi
 ```
 
 ### Method 3: Workspace-Scoped Installation (Project-specific)
@@ -79,10 +80,10 @@ To enforce GRC guardrails only within a specific project or workspace repository
 ```bash
 cd /path/to/your/project-workspace
 mkdir -p .antigravity/plugins
-git clone https://github.com/mohan-the-octocat/nandi.git .antigravity/plugins/nandi
+ln -s /path/to/nandi/client .antigravity/plugins/nandi
 ```
 
-### Method 3: Via Antigravity 2.0 UI Settings
+### Method 4: Via Antigravity 2.0 UI Settings
 1. Open your **Antigravity 2.0** desktop interface.
 2. Open **Settings** (⚙️) from the sidebar or command palette (`Ctrl/Cmd + ,`).
 3. Navigate to **Plugins & Customizations** > **Installed Plugins**.
@@ -97,22 +98,22 @@ git clone https://github.com/mohan-the-octocat/nandi.git .antigravity/plugins/na
 If the plugin does not appear in Antigravity after placing it in a global path:
 
 1. **Explicit Registration via `plugins.json`**:
-   If Antigravity does not automatically scan your custom directory, explicitly register the path in your global plugins configuration file (`~/.gemini/config/plugins.json`):
+   If Antigravity does not automatically scan your custom directory, explicitly register the client directory in your global plugins configuration file (`~/.gemini/config/plugins.json`):
    ```json
    {
      "entries": [
        {
-         "path": "/absolute/path/to/nandi"
+         "path": "/absolute/path/to/nandi/client"
        }
      ]
    }
    ```
 2. **Verify `plugin.json` Location**:
-   Ensure `plugin.json` is at the **root** of the target folder (`/path/to/nandi/plugin.json`) and not nested inside a subfolder.
+   Ensure `plugin.json` is at the root of the client folder (`/path/to/nandi/client/plugin.json`).
 3. **Permissions**:
    Ensure the hook entrypoints have executable permissions:
    ```bash
-   chmod +x src/hooks/*.py src/cli/grc_admin.py bin/install-nandi.sh
+   chmod +x client/src/hooks/*.py client/src/cli/grc_admin.py bin/install-nandi.sh
    ```
 4. **Session Refresh**:
    Plugins, hooks, and skills are initialized when a session starts. Open a **new conversation window** or restart Antigravity to reload the discovery index.
@@ -125,7 +126,7 @@ Once installed, verify that the lifecycle hooks and guardrails are active:
 
 1. **Verify Compliance Coverage**:
    ```bash
-   python3 src/cli/grc_admin.py verify-compliance --framework ALL
+   python3 client/src/cli/grc_admin.py verify-compliance --framework ALL
    ```
 2. **Run Health & Safety Probes**:
    ```bash
@@ -143,7 +144,7 @@ Once installed, verify that the lifecycle hooks and guardrails are active:
 
 ### 1. Provision Server-Side Model Armor & Infrastructure via Terraform
 ```bash
-cd terraform
+cd GCP/terraform
 cp terraform.tfvars.example terraform.tfvars
 terraform init
 terraform apply
@@ -156,31 +157,34 @@ python3 tests/run_all_tests.py
 
 ### 3. Test a Prompt with the Admin CLI
 ```bash
-python3 src/cli/grc_admin.py test-prompt "Check KYC: PAN ABCPE1234F, Aadhaar 2345 6789 0124"
+python3 client/src/cli/grc_admin.py test-prompt "Check KYC: PAN ABCPE1234F, Aadhaar 2345 6789 0124"
 ```
 
 ### 4. Verify Compliance Matrix
 ```bash
-python3 src/cli/grc_admin.py verify-compliance --framework ALL
+python3 client/src/cli/grc_admin.py verify-compliance --framework ALL
 ```
 
 ### 5. Inspect Cryptographic Audit Trail
 ```bash
-python3 src/cli/grc_admin.py show-audit --tail 10
+python3 client/src/cli/grc_admin.py show-audit --tail 10
 ```
 
 ---
 
-## Documentation Links
+## Repository Architecture & Documentation Links
 
 * [System Architecture & SDD](docs/ARCHITECTURE.md)
-* [Terraform Infrastructure Automation](terraform/README.md)
+* [Client Plugin Architecture & Guide](client/README.md)
+* [Google Cloud Server Infrastructure](GCP/README.md)
+* [Terraform Infrastructure Automation](GCP/terraform/README.md)
+* [Google Cloud Model Armor Deployment Guide](GCP/MODEL_ARMOR_SETUP.md)
 * [RBI Master Direction Compliance Mapping](docs/RBI_COMPLIANCE.md)
 * [SEBI CSCRF Framework Compliance Mapping](docs/SEBI_COMPLIANCE.md)
-* [Google Cloud Model Armor Deployment Guide](docs/MODEL_ARMOR_SETUP.md)
 * [Operator & Developer User Guide](docs/USER_GUIDE.md)
 
 ---
 
 ## License
+Apache-2.0. Developed for Google Cloud Financial Services Customers.
 Apache-2.0. Developed for Google Cloud Financial Services Customers.

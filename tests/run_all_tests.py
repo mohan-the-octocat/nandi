@@ -6,10 +6,13 @@ import sys
 import time
 import unittest
 
-# Ensure plugin root is in python path
-plugin_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if plugin_root not in sys.path:
-    sys.path.insert(0, plugin_root)
+# Ensure client root and repo root are in python path
+repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+client_root = os.path.join(repo_root, "client")
+if client_root not in sys.path:
+    sys.path.insert(0, client_root)
+if repo_root not in sys.path:
+    sys.path.insert(0, repo_root)
 
 
 def main():
@@ -18,7 +21,7 @@ def main():
     print("=" * 80)
 
     loader = unittest.TestLoader()
-    suite = loader.discover(start_dir=os.path.join(plugin_root, "tests"), pattern="test_*.py")
+    suite = loader.discover(start_dir=os.path.join(repo_root, "tests"), pattern="test_*.py")
 
     start_time = time.perf_counter()
     runner = unittest.TextTestRunner(verbosity=2)
