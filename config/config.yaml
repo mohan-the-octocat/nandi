@@ -32,7 +32,6 @@ model_armor:
   location: "asia-south1" # asia-south1 (Mumbai, India) for domestic data residency
   template_id: "fsi-india-compliance-template"
   endpoint: "modelarmor.asia-south1.rep.googleapis.com" # Regional REP endpoint
-  mock_mode: false # Set true for local offline testing / CI
   fail_open_on_network_error: false # FSI compliance requires Fail-Closed (false)
   timeout_seconds: 5.0
   retry_attempts: 2

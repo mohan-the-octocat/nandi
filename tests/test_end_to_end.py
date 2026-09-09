@@ -1,8 +1,15 @@
 """End-to-End Simulation of Full Antigravity Guardrail Pipeline."""
 
+import os
+import sys
 import unittest
+
+plugin_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if plugin_root not in sys.path:
+    sys.path.insert(0, plugin_root)
+
 from src.governance.audit_logger import FSIAuditLogger
-from src.model_armor.client import ModelArmorClient
+from src.model_armor.client import ModelArmorClient, ModelArmorResponse
 from src.model_armor.policy_evaluator import ModelArmorPolicyEvaluator
 from src.pii_guard.checksums import verhoeff_generate
 from src.pii_guard.detector import PIIDetector
@@ -12,9 +19,53 @@ class TestEndToEndPipeline(unittest.TestCase):
 
     def setUp(self):
         self.pii_detector = PIIDetector()
-        self.ma_client = ModelArmorClient(mock_mode=True)
+        self.ma_client = ModelArmorClient()
         self.ma_evaluator = ModelArmorPolicyEvaluator()
         self.logger = FSIAuditLogger(emit_to_stderr=False)
+
+        # Mock Model Armor responses for E2E scenarios without external network dependency
+        def mock_sanitize(prompt: str) -> ModelArmorResponse:
+            p_lower = prompt.lower()
+            if "disregard all prior rules" in p_lower or "developer mode" in p_lower:
+                return ModelArmorResponse(
+                    success=True,
+                    raw_response={},
+                    filter_match_state="MATCH_FOUND",
+                    invocation_result="SUCCESS",
+                    filter_results={
+                        "pi_and_jailbreak": {
+                            "pi_and_jailbreak_filter_result": {
+                                "match_state": "MATCH_FOUND",
+                                "confidence_level": "HIGH",
+                                "score": 0.95,
+                            }
+                        }
+                    },
+                )
+            if "evil-banking-login" in p_lower:
+                return ModelArmorResponse(
+                    success=True,
+                    raw_response={},
+                    filter_match_state="MATCH_FOUND",
+                    invocation_result="SUCCESS",
+                    filter_results={
+                        "malicious_uris": {
+                            "malicious_uri_filter_result": {
+                                "match_state": "MATCH_FOUND",
+                                "matched_uris": ["http://evil-banking-login.in/sync"],
+                            }
+                        }
+                    },
+                )
+            return ModelArmorResponse(
+                success=True,
+                raw_response={},
+                filter_match_state="NO_MATCH_FOUND",
+                invocation_result="SUCCESS",
+                filter_results={},
+            )
+
+        self.ma_client.sanitize_user_prompt = mock_sanitize
 
     def run_pipeline(self, prompt: str) -> dict:
         """Executes the dual-stage FSI security pipeline."""

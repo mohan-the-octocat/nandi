@@ -85,7 +85,6 @@ model_armor:
   project_id: "your-gcp-project-id"
   location: "asia-south1"
   template_id: "fsi-india-compliance-template"
-  mock_mode: false
 ```
 
 ---

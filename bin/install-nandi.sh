@@ -21,7 +21,6 @@ GLOBAL_TARGET_DIR_2="${HOME}/.gemini/config/plugins"
 PROJECT_DIR=""
 SKIP_AUTH=false
 SKIP_VALIDATION=false
-MOCK_MODE=false
 
 print_usage() {
   cat <<EOF
@@ -31,7 +30,6 @@ Options:
   -p, --project-dir DIR    Install plugin scoped to a specific project alone (project-scoped)
   --skip-auth              Skip interactive 'gcloud auth login' (e.g. if already logged in)
   --skip-validation        Skip live Model Armor API validation call
-  --mock-mode              Run in Model Armor mock/offline mode (MODEL_ARMOR_MOCK_MODE=true)
   -h, --help               Show this help message
 
 Examples:
@@ -56,10 +54,6 @@ while [[ $# -gt 0 ]]; do
       SKIP_VALIDATION=true
       shift
       ;;
-    --mock-mode)
-      MOCK_MODE=true
-      shift
-      ;;
     -h|--help)
       print_usage
       exit 0
@@ -71,10 +65,6 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
-
-if [[ "${MOCK_MODE}" == "true" ]]; then
-  export MODEL_ARMOR_MOCK_MODE=true
-fi
 
 echo "============================================================"
 echo " Nandi Installer (The Incorruptible Threshold Guardian)"
@@ -115,9 +105,7 @@ echo "✓ gcloud CLI verified: $(gcloud --version 2>/dev/null | head -n 1)"
 echo ""
 echo "[Step 2/5] Google Cloud Authentication..."
 
-if [[ "${MOCK_MODE}" == "true" ]]; then
-  echo "✓ Mock mode enabled; skipping Google Cloud auth login."
-elif [[ "${SKIP_AUTH}" == "true" ]]; then
+if [[ "${SKIP_AUTH}" == "true" ]]; then
   echo "✓ Skipping 'gcloud auth login' (--skip-auth specified)."
 else
   echo "Running 'gcloud auth login' for Model Armor API access..."
@@ -126,7 +114,7 @@ else
 fi
 
 # Cache access token in environment for fast Python API calls if available
-if [[ -z "${GOOGLE_OAUTH_ACCESS_TOKEN:-}" && -z "${GCP_ACCESS_TOKEN:-}" && "${MOCK_MODE}" != "true" ]]; then
+if [[ -z "${GOOGLE_OAUTH_ACCESS_TOKEN:-}" && -z "${GCP_ACCESS_TOKEN:-}" ]]; then
   TOKEN="$(gcloud auth print-access-token 2>/dev/null || true)"
   if [[ -n "${TOKEN}" ]]; then
     export GOOGLE_OAUTH_ACCESS_TOKEN="${TOKEN}"

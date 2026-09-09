@@ -9,8 +9,6 @@ import urllib.error
 import urllib.request
 from typing import Any, Dict, Optional
 
-from src.model_armor.mock_server import simulate_model_armor_sanitization
-
 
 @dataclasses.dataclass
 class ModelArmorRequest:
@@ -68,7 +66,6 @@ class ModelArmorClient:
         location: str = "asia-south1",
         template_id: str = "fsi-india-compliance-template",
         endpoint: Optional[str] = None,
-        mock_mode: Optional[bool] = None,
         timeout_seconds: float = 5.0,
         retry_attempts: int = 2,
     ):
@@ -76,18 +73,11 @@ class ModelArmorClient:
         self.location = os.environ.get("MODEL_ARMOR_LOCATION", location)
         self.template_id = os.environ.get("MODEL_ARMOR_TEMPLATE_ID", template_id)
         self.endpoint = endpoint or os.environ.get("MODEL_ARMOR_ENDPOINT")
-        if mock_mode is not None:
-            self.mock_mode = mock_mode
-        else:
-            self.mock_mode = os.environ.get("MODEL_ARMOR_MOCK_MODE", "").lower() in ("true", "1", "yes")
         self.timeout_seconds = timeout_seconds
         self.retry_attempts = retry_attempts
 
     def _get_auth_token(self) -> Optional[str]:
         """Retrieves GCP OAuth2 access token via environment, token file, google-auth ADC, or gcloud."""
-        if self.mock_mode:
-            return None
-
         if ModelArmorClient._auth_attempted:
             return ModelArmorClient._cached_token
 
@@ -163,20 +153,6 @@ class ModelArmorClient:
             template_id=tmpl,
             user_prompt=prompt,
         )
-
-        if self.mock_mode:
-            raw_mock = simulate_model_armor_sanitization(prompt, tmpl)
-            elapsed_ms = (time.perf_counter() - start_time) * 1000.0
-            s_result = raw_mock.get("sanitization_result", {})
-            return ModelArmorResponse(
-                success=True,
-                raw_response=raw_mock,
-                filter_match_state=s_result.get("filter_match_state", "NO_MATCH_FOUND"),
-                invocation_result=s_result.get("invocation_result", "SUCCESS"),
-                filter_results=s_result.get("filter_results", {}),
-                sanitized_text=prompt,
-                latency_ms=round(elapsed_ms, 2),
-            )
 
         auth_token = self._get_auth_token()
         if not auth_token:

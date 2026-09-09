@@ -20,7 +20,7 @@ nandi/ (formerly grc-plugin/)
 │   └── model_armor_policy.json # Model Armor template settings
 ├── src/
 │   ├── pii_guard/              # Regex & Checksum PII engine (Verhoeff, Luhn, Mod 36)
-│   ├── model_armor/            # Model Armor REST client, policy evaluator, mock engine
+│   ├── model_armor/            # Model Armor REST client and policy evaluator
 │   ├── governance/             # Audit logger, RBI & SEBI controllers
 │   ├── hooks/                  # Antigravity lifecycle hook executables
 │   └── cli/                    # Admin CLI (grc_admin.py)

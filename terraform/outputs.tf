@@ -42,6 +42,5 @@ model_armor:
   project_id: "${var.project_id}"
   location: "${var.region}"
   template_id: "${var.template_id}"
-  mock_mode: false
 EOT
 }
