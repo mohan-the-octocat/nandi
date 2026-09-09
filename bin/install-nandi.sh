@@ -4,10 +4,10 @@
 # The Incorruptible Threshold Guardian for Google Antigravity.
 #
 # Execution Flow:
-#  1. Verify Prerequisites (Python 3 & gcloud CLI)
+#  1. Local Environment & Library Diagnostics (Python 3.8+, core stdlib, gcloud CLI, local files)
 #  2. Google Cloud Authentication ('gcloud auth application-default login')
-#  3. Validate Model Armor API with a live sample prompt
-#  4. Execute Unit Test Suite (27 tests)
+#  3. Google Cloud Project & Model Armor Template Diagnostics (REP endpoint, template inspection, live prompt sanitization)
+#  4. Execute Unit Test Suite (31 tests)
 #  5. Install Nandi plugin installables (Global or Project-Scoped)
 # ==============================================================================
 set -euo pipefail
@@ -43,6 +43,7 @@ EOF
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -p|--project-dir|--project)
+      mkdir -p "$2"
       PROJECT_DIR="$(cd "$2" && pwd)"
       shift 2
       ;;
@@ -80,24 +81,116 @@ fi
 echo "============================================================"
 
 # ------------------------------------------------------------------------------
-# 1. Check Prerequisites (Python 3 & gcloud CLI)
+# 1. Local Environment & Library Diagnostics
 # ------------------------------------------------------------------------------
 echo ""
-echo "[Step 1/5] Checking Prerequisites..."
+echo "[Step 1/5] Local Environment & Library Diagnostics..."
 
+# 1.1 Python runtime and version check (require >= 3.8)
 if ! command -v python3 &> /dev/null; then
-  echo "❌ Error: python3 is required for Nandi hooks and CLI." >&2
+  echo "❌ Error: python3 is not installed or not available on PATH." >&2
+  echo "   Nandi requires Python 3.8+ for hooks, CLI, and checksum validators." >&2
   exit 1
 fi
-echo "✓ python3 verified: $(python3 --version)"
 
-if ! command -v gcloud &> /dev/null; then
-  echo "❌ Error: Google Cloud SDK ('gcloud' CLI) is not installed on this device." >&2
-  echo "Google Cloud Model Armor requires the gcloud CLI for authentication and API validation." >&2
-  echo "Please install gcloud from https://cloud.google.com/sdk/docs/install and try again." >&2
+PYTHON_BIN="$(command -v python3)"
+PYTHON_VER="$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}")')"
+PYTHON_MAJOR="$(python3 -c 'import sys; print(sys.version_info.major)')"
+PYTHON_MINOR="$(python3 -c 'import sys; print(sys.version_info.minor)')"
+
+if [[ "${PYTHON_MAJOR}" -lt 3 ]] || [[ "${PYTHON_MAJOR}" -eq 3 && "${PYTHON_MINOR}" -lt 8 ]]; then
+  echo "❌ Error: Python version ${PYTHON_VER} is below minimum requirement (>= 3.8)." >&2
+  echo "   Please upgrade Python 3 to version 3.8 or later." >&2
   exit 1
 fi
-echo "✓ gcloud CLI verified: $(gcloud --version 2>/dev/null | head -n 1)"
+echo "  ✓ python3 runtime verified: ${PYTHON_BIN} (v${PYTHON_VER})"
+
+# 1.2 Core standard library modules check
+python3 - "${PLUGIN_ROOT}" <<'PY'
+import sys
+required_modules = [
+    "dataclasses",
+    "hashlib",
+    "json",
+    "os",
+    "re",
+    "subprocess",
+    "sys",
+    "time",
+    "typing",
+    "urllib.request",
+    "urllib.error",
+]
+missing = []
+for mod in required_modules:
+    try:
+        __import__(mod)
+    except ImportError:
+        missing.append(mod)
+
+if missing:
+    print(f"❌ Missing requisite Python modules: {', '.join(missing)}", file=sys.stderr)
+    print("   Please ensure your Python installation includes standard library modules.", file=sys.stderr)
+    sys.exit(1)
+print(f"  ✓ Requisite Python standard libraries verified ({len(required_modules)} modules)")
+PY
+
+# 1.3 Optional acceleration & configuration packages
+python3 - <<'PY'
+try:
+    import google.auth
+    import google.auth.transport.requests
+    print("  ✓ google-auth detected (high-performance in-process ADC token acquisition enabled)")
+except ImportError:
+    print("  ℹ google-auth not installed (falling back to gcloud CLI token extraction; 'pip install google-auth' recommended for lower hook latency)")
+
+try:
+    import yaml
+    print("  ✓ pyyaml detected (YAML configuration parsing enabled)")
+except ImportError:
+    print("  ℹ pyyaml not installed (standard JSON fallback configuration parser active)")
+PY
+
+# 1.4 Google Cloud SDK (gcloud CLI) verification
+if ! command -v gcloud &> /dev/null; then
+  echo "❌ Error: Google Cloud SDK ('gcloud' CLI) is not installed or not on PATH." >&2
+  echo "   Google Cloud Model Armor requires gcloud for authentication, ADC tokens, and project management." >&2
+  echo "   Please install the Google Cloud SDK: https://cloud.google.com/sdk/docs/install" >&2
+  exit 1
+fi
+
+GCLOUD_BIN="$(command -v gcloud)"
+GCLOUD_VER="$(gcloud --version 2>/dev/null | head -n 1)"
+GCLOUD_ACCOUNT="$(gcloud config get-value account 2>/dev/null || echo "(none)")"
+GCLOUD_PROJECT="$(gcloud config get-value project 2>/dev/null || echo "(none)")"
+echo "  ✓ gcloud CLI verified: ${GCLOUD_BIN} (${GCLOUD_VER})"
+echo "    Active gcloud Account : ${GCLOUD_ACCOUNT}"
+echo "    Active gcloud Project : ${GCLOUD_PROJECT}"
+
+# 1.5 Local repository file & hook integrity check
+REQUIRED_FILES=(
+  "plugin.json"
+  "hooks.json"
+  "config/config.yaml"
+  "config/pii_patterns.json"
+  "config/model_armor_policy.json"
+  "src/hooks/hook_base.py"
+  "src/hooks/pii_hook.py"
+  "src/hooks/model_armor_hook.py"
+  "src/hooks/combined_guard_hook.py"
+  "src/cli/grc_admin.py"
+  "src/model_armor/client.py"
+  "src/model_armor/policy_evaluator.py"
+)
+
+for file in "${REQUIRED_FILES[@]}"; do
+  if [[ ! -f "${PLUGIN_ROOT}/${file}" ]]; then
+    echo "❌ Missing required repository file: ${file}" >&2
+    echo "   Please verify that your git repository clone is complete and intact." >&2
+    exit 1
+  fi
+done
+echo "  ✓ Local repository integrity verified (${#REQUIRED_FILES[@]} essential files checked)"
 
 # ------------------------------------------------------------------------------
 # 2. Google Cloud Authentication ('gcloud auth application-default login')
@@ -106,11 +199,11 @@ echo ""
 echo "[Step 2/5] Google Cloud Authentication (Application Default Credentials)..."
 
 if [[ "${SKIP_AUTH}" == "true" ]]; then
-  echo "✓ Skipping 'gcloud auth application-default login' (--skip-auth specified)."
+  echo "  ✓ Skipping interactive 'gcloud auth application-default login' (--skip-auth specified)."
 else
-  echo "Running 'gcloud auth application-default login' for Model Armor API access..."
+  echo "  Running 'gcloud auth application-default login' for Model Armor API access..."
   gcloud auth application-default login
-  echo "✓ Google Cloud Application Default Credentials configured successfully."
+  echo "  ✓ Google Cloud Application Default Credentials configured successfully."
 fi
 
 # Cache access token in environment for fast Python API calls if available
@@ -122,17 +215,19 @@ if [[ -z "${GOOGLE_OAUTH_ACCESS_TOKEN:-}" && -z "${GCP_ACCESS_TOKEN:-}" ]]; then
 fi
 
 # ------------------------------------------------------------------------------
-# 3. Live Model Armor API Validation Call from End-User Device
+# 3. Google Cloud Project & Model Armor Template Diagnostics
 # ------------------------------------------------------------------------------
 echo ""
-echo "[Step 3/5] Validating Model Armor Connection from Device..."
+echo "[Step 3/5] Google Cloud Project & Model Armor Template Diagnostics..."
 
 if [[ "${SKIP_VALIDATION}" == "true" ]]; then
-  echo "✓ Skipping live Model Armor API validation (--skip-validation specified)."
+  echo "  ✓ Skipping Google Cloud project & Model Armor validation (--skip-validation specified)."
 else
-  echo "Executing sample Model Armor validation call..."
   python3 - "${PLUGIN_ROOT}" <<'PY'
-import sys, os
+import json
+import os
+import socket
+import sys
 
 plugin_root = sys.argv[1]
 if plugin_root not in sys.path:
@@ -142,27 +237,126 @@ from src.model_armor.client import ModelArmorClient
 
 client = ModelArmorClient()
 
-sample_prompt = "Verify Google Cloud Model Armor connectivity and FSI template guardrails."
-print(f"  Target Project : {client.project_id}")
-print(f"  Location       : {client.location}")
-print(f"  Template ID    : {client.template_id}")
-print(f"  Sample Prompt  : \"{sample_prompt}\"")
+print(f"  Target GCP Project ID : {client.project_id}")
+print(f"  Target GCP Location   : {client.location}")
+print(f"  Target Template ID    : {client.template_id}")
 
-resp = client.sanitize_user_prompt(sample_prompt)
-if not resp.success:
-    print(f"\n❌ Model Armor API Validation FAILED:")
-    print(f"   Error: {resp.error_message}")
-    print(f"   Status Code: {resp.status_code}")
-    print("\nInstallation aborted. Please ensure that:")
-    print("1. You have run 'gcloud auth application-default login' with permissions to project 'stratosphere-461622'")
-    print("2. The Model Armor template exists in region 'asia-south1'")
-    print("3. Your device has network access to modelarmor.asia-south1.rep.googleapis.com")
+# 3.1 Regional Endpoint reachability check
+endpoint_host = (
+    client.endpoint
+    if client.endpoint
+    else ("modelarmor.googleapis.com" if client.location == "global" else f"modelarmor.{client.location}.rep.googleapis.com")
+)
+print(f"  Regional REP Endpoint : {endpoint_host}")
+
+try:
+    ip = socket.gethostbyname(endpoint_host)
+    print(f"  ✓ DNS reachability verified: {endpoint_host} -> {ip}")
+except Exception as e:
+    print(f"  ⚠️ Warning: DNS resolution for {endpoint_host} failed ({e}). Proceeding to API check...")
+
+# 3.2 Model Armor Template Diagnostics via get_template()
+print(f"\n  Inspecting Model Armor template 'projects/{client.project_id}/locations/{client.location}/templates/{client.template_id}'...")
+
+template_res = client.get_template()
+
+if not template_res.get("success"):
+    status_code = template_res.get("status_code", 0)
+    error_msg = template_res.get("error_message", "Unknown error")
+
+    print(f"\n❌ GCP Project Model Armor Template Diagnostic FAILED (HTTP {status_code}):")
+    print(f"   Resource: {template_res.get('resource_name')}")
+    print(f"   Error   : {error_msg}")
+
+    if status_code == 404:
+        print("\n[DIAGNOSTIC] Model Armor Template NOT FOUND in GCP Project.")
+        print(f"  The template '{client.template_id}' does not exist in projects/{client.project_id}/locations/{client.location}.")
+        print("\n  Remediation Option A (Automated Terraform):")
+        print(f"    cd {plugin_root}/terraform")
+        print("    cp terraform.tfvars.example terraform.tfvars")
+        print(f"    # Ensure project_id=\"{client.project_id}\" and region=\"{client.location}\" are set")
+        print("    terraform init && terraform apply")
+        print("\n  Remediation Option B (Direct REST / gcloud API):")
+        print(f"    curl -X POST \\")
+        print(f"      -H \"Authorization: Bearer $(gcloud auth print-access-token)\" \\")
+        print(f"      -H \"Content-Type: application/json; charset=utf-8\" \\")
+        print(f"      -H \"X-Goog-User-Project: {client.project_id}\" \\")
+        print(f"      \"https://{endpoint_host}/v1/projects/{client.project_id}/locations/{client.location}/templates?templateId={client.template_id}\" \\")
+        print(f"      -d @{plugin_root}/terraform/generated_model_armor_template.json")
+        print(f"\n  Refer to {plugin_root}/docs/MODEL_ARMOR_SETUP.md for complete configuration details.")
+    elif status_code == 403:
+        print("\n[DIAGNOSTIC] PERMISSION DENIED accessing Model Armor in GCP Project.")
+        print(f"  The authenticated identity lacks required IAM permissions on project '{client.project_id}'.")
+        print("\n  Remediation Commands:")
+        print(f"    1. Enable Model Armor API:")
+        print(f"       gcloud services enable modelarmor.googleapis.com --project={client.project_id}")
+        print(f"    2. Grant Model Armor User & Viewer roles to your user:")
+        print(f"       gcloud projects add-iam-policy-binding {client.project_id} \\")
+        print(f"         --member=\"user:$(gcloud config get-value account)\" \\")
+        print(f"         --role=\"roles/modelarmor.user\"")
+        print(f"       gcloud projects add-iam-policy-binding {client.project_id} \\")
+        print(f"         --member=\"user:$(gcloud config get-value account)\" \\")
+        print(f"         --role=\"roles/modelarmor.viewer\"")
+    elif status_code == 401:
+        print("\n[DIAGNOSTIC] AUTHENTICATION FAILED obtaining GCP OAuth2 Token.")
+        print("  Please re-run 'gcloud auth application-default login' or export GOOGLE_OAUTH_ACCESS_TOKEN.")
+    else:
+        print("\n[DIAGNOSTIC] Unexpected Model Armor API error.")
+        print("  Please check network access, proxy settings, or GCP service health.")
+
+    print("\nInstallation aborted due to failed GCP project prerequisites.")
     sys.exit(1)
 
-print(f"✓ Model Armor API Call Succeeded!")
-print(f"   Invocation Result : {resp.invocation_result}")
-print(f"   Filter Match State: {resp.filter_match_state}")
-print(f"   Latency           : {resp.latency_ms}ms")
+template_data = template_res.get("template", {})
+print(f"  ✓ Model Armor Template verified exists!")
+print(f"    Resource Name : {template_data.get('name', template_res.get('resource_name'))}")
+if "updateTime" in template_data:
+    print(f"    Last Updated  : {template_data.get('updateTime')}")
+
+# Inspect and display configured safety filters
+filter_cfg = template_data.get("filterConfig", template_data.get("filter_config", {}))
+
+pi_cfg = filter_cfg.get("piAndJailbreakFilterConfig") or filter_cfg.get("pi_and_jailbreak_filter_settings")
+if pi_cfg:
+    enforcement = pi_cfg.get("filterEnforcement") or pi_cfg.get("filter_enforcement", "ENABLED")
+    conf = pi_cfg.get("confidenceLevel") or pi_cfg.get("confidence_level", "DEFAULT")
+    print(f"    ✓ Prompt Injection & Jailbreak Filter: {enforcement} (Confidence: {conf})")
+else:
+    print(f"    ℹ Prompt Injection & Jailbreak Filter: (Not configured in template)")
+
+rai_cfg = filter_cfg.get("raiFilterConfig") or filter_cfg.get("rai_settings")
+if rai_cfg:
+    print(f"    ✓ Responsible AI (RAI) Content Filters: ACTIVE")
+else:
+    print(f"    ℹ Responsible AI (RAI) Content Filters: (Not configured in template)")
+
+uri_cfg = filter_cfg.get("maliciousUriFilterConfig") or filter_cfg.get("malicious_uri_settings")
+if uri_cfg:
+    print(f"    ✓ Malicious URI Filter: ACTIVE")
+else:
+    print(f"    ℹ Malicious URI Filter: (Not configured or not supported in this region)")
+
+tmpl_meta = template_data.get("templateMetadata", template_data.get("template_metadata", {}))
+multi_lang = filter_cfg.get("multiLanguageConfig") or tmpl_meta.get("multi_language_config")
+if multi_lang:
+    print(f"    ✓ Multi-Language Detection: ENABLED")
+
+# 3.3 Live Prompt Sanitization Validation Call
+print(f"\n  Executing sample Model Armor prompt sanitization call...")
+sample_prompt = "Verify Google Cloud Model Armor connectivity and FSI template guardrails."
+resp = client.sanitize_user_prompt(sample_prompt)
+
+if not resp.success:
+    print(f"\n❌ Live Model Armor Prompt Sanitization FAILED:")
+    print(f"   Error: {resp.error_message}")
+    print(f"   Status Code: {resp.status_code}")
+    print("\nInstallation aborted. Live Model Armor call did not succeed.")
+    sys.exit(1)
+
+print(f"  ✓ Live Model Armor API Call Succeeded!")
+print(f"    Invocation Result : {resp.invocation_result}")
+print(f"    Filter Match State: {resp.filter_match_state}")
+print(f"    Response Latency  : {resp.latency_ms}ms")
 PY
 fi
 
@@ -176,7 +370,7 @@ chmod +x "${PLUGIN_ROOT}"/src/hooks/*.py "${PLUGIN_ROOT}/src/cli/grc_admin.py" "
 echo "✓ Made hook entrypoints and CLI executable"
 
 python3 "${PLUGIN_ROOT}/tests/run_all_tests.py"
-echo "✓ All 27 unit tests passed successfully"
+echo "✓ All 31 unit tests passed successfully"
 
 # Dynamically update hooks.json with absolute path to this clone's hook entrypoints
 python3 - "${PLUGIN_ROOT}/hooks.json" "${PLUGIN_ROOT}" <<'PY'

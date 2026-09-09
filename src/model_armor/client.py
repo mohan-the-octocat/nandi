@@ -224,3 +224,92 @@ class ModelArmorClient:
             error_message=f"Model Armor live API call failed ({last_error}). Prompt blocked under fail-closed security policy.",
             latency_ms=round(elapsed_ms, 2),
         )
+
+    def get_template(
+        self,
+        template_id: Optional[str] = None,
+        location: Optional[str] = None,
+        project_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Fetches Model Armor template metadata from the GCP Regional Endpoint.
+
+        Args:
+            template_id: Optional template ID override (defaults to self.template_id).
+            location: Optional location override (defaults to self.location).
+            project_id: Optional project ID override (defaults to self.project_id).
+
+        Returns:
+            Dict containing:
+                - success (bool): True if template exists and was successfully retrieved.
+                - template (dict): Template definition and filter configurations from GCP.
+                - status_code (int): HTTP status code (200, 404, 403, etc.) or 0 if connection error.
+                - error_message (Optional[str]): Error description if call failed.
+                - resource_name (str): Full GCP resource name of the template.
+        """
+        proj = project_id or self.project_id
+        loc = location or self.location
+        tmpl = template_id or self.template_id
+
+        template_resource_name = f"projects/{proj}/locations/{loc}/templates/{tmpl}"
+
+        auth_token = self._get_auth_token()
+        if not auth_token:
+            return {
+                "success": False,
+                "template": {},
+                "status_code": 401,
+                "error_message": "Authentication failed: Unable to obtain GCP OAuth2 access token.",
+                "resource_name": template_resource_name,
+            }
+
+        if self.endpoint:
+            target_endpoint = self.endpoint
+        elif loc == "global":
+            target_endpoint = "modelarmor.googleapis.com"
+        else:
+            target_endpoint = f"modelarmor.{loc}.rep.googleapis.com"
+
+        url = f"https://{target_endpoint}/v1/{template_resource_name}"
+        headers = {
+            "Content-Type": "application/json; charset=utf-8",
+            "Authorization": f"Bearer {auth_token}",
+            "X-Goog-User-Project": proj,
+        }
+
+        last_error = None
+        for attempt in range(self.retry_attempts + 1):
+            try:
+                http_req = urllib.request.Request(url, headers=headers, method="GET")
+                with urllib.request.urlopen(http_req, timeout=self.timeout_seconds) as resp:
+                    resp_body = resp.read().decode("utf-8")
+                    data = json.loads(resp_body)
+                    return {
+                        "success": True,
+                        "template": data,
+                        "status_code": resp.status,
+                        "error_message": None,
+                        "resource_name": template_resource_name,
+                    }
+            except urllib.error.HTTPError as e:
+                err_content = e.read().decode("utf-8", errors="ignore")
+                last_error = f"HTTP {e.code}: {e.reason} - {err_content}"
+                return {
+                    "success": False,
+                    "template": {},
+                    "status_code": e.code,
+                    "error_message": last_error,
+                    "resource_name": template_resource_name,
+                }
+            except Exception as e:
+                last_error = str(e)
+
+            time.sleep(0.1 * (2 ** attempt))
+
+        return {
+            "success": False,
+            "template": {},
+            "status_code": 0,
+            "error_message": f"Failed to retrieve template: {last_error}",
+            "resource_name": template_resource_name,
+        }
+

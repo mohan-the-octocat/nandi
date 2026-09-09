@@ -5,7 +5,7 @@
 [![Compliance: SEBI CSCRF 2024](https://img.shields.io/badge/Compliance-SEBI%20CSCRF%202024-green)](docs/SEBI_COMPLIANCE.md)
 [![Compliance: DPDP Act 2023](https://img.shields.io/badge/Compliance-DPDP%20Act%202023-orange)](docs/RBI_COMPLIANCE.md)
 [![Security: Google Cloud Model Armor](https://img.shields.io/badge/Security-Google%20Cloud%20Model%20Armor-red)](docs/MODEL_ARMOR_SETUP.md)
-[![Test Suite: 100% Pass](https://img.shields.io/badge/Tests-27%2F27%20Passing-brightgreen)](tests/run_all_tests.py)
+[![Test Suite: 100% Pass](https://img.shields.io/badge/Tests-31%2F31%20Passing-brightgreen)](tests/run_all_tests.py)
 
 **Nandi** (*The Incorruptible Threshold Guardian*): Enterprise-grade Governance, Risk, and Compliance (GRC) Antigravity Plugin providing real-time **Indian PII Regex/Checksum Protection** and **Google Cloud Model Armor Safety Filtering** for Financial Services Institutions (Banks, NBFCs, Stock Brokers, AMCs, FinTechs) in India.
 
@@ -56,10 +56,10 @@ To install scoped to a specific project alone:
 ```
 
 The installer:
-1. **Verifies Prerequisites**: Checks for Python 3 and `gcloud` CLI.
+1. **Performs Local Environment & Library Diagnostics**: Verifies Python 3.8+ runtime, validates core standard library modules (`dataclasses`, `hashlib`, `json`, `urllib`, etc.), probes optional acceleration packages (`google-auth`, `pyyaml`), checks `gcloud` CLI presence/account/project, and verifies repository file integrity.
 2. **Authenticates**: Runs `gcloud auth application-default login` to configure Application Default Credentials (ADC) for Model Armor.
-3. **Validates Connection**: Sends a live test prompt to Google Cloud Model Armor to verify template and regional REP endpoint connectivity.
-4. **Runs Test Suite**: Validates 27 automated unit tests across PII, Model Armor, and governance.
+3. **Validates GCP Project & Model Armor Template**: Validates regional REP endpoint reachability (`modelarmor.asia-south1.rep.googleapis.com`), checks existence and filter configurations of the Model Armor template (`fsi-india-compliance-template`), and executes a live prompt sanitization validation call.
+4. **Runs Test Suite**: Validates all 31 automated unit tests across PII checksums, Model Armor gates, and governance.
 5. **Installs Plugin**: Configures symlinks and registers lifecycle hooks in Antigravity.
 
 ### Method 2: Manual Symlink (Global)
@@ -95,17 +95,17 @@ If the plugin does not appear in Antigravity after placing it in a global path:
    {
      "entries": [
        {
-         "path": "/absolute/path/to/antigravity-fsi-india-guard"
+         "path": "/absolute/path/to/nandi"
        }
      ]
    }
    ```
 2. **Verify `plugin.json` Location**:
-   Ensure `plugin.json` is at the **root** of the target folder (`/path/to/antigravity-fsi-india-guard/plugin.json`) and not nested inside a subfolder.
+   Ensure `plugin.json` is at the **root** of the target folder (`/path/to/nandi/plugin.json`) and not nested inside a subfolder.
 3. **Permissions**:
    Ensure the hook entrypoints have executable permissions:
    ```bash
-   chmod +x src/hooks/*.py src/cli/grc_admin.py
+   chmod +x src/hooks/*.py src/cli/grc_admin.py bin/install-nandi.sh
    ```
 4. **Session Refresh**:
    Plugins, hooks, and skills are initialized when a session starts. Open a **new conversation window** or restart Antigravity to reload the discovery index.
