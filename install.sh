@@ -113,7 +113,7 @@ if [[ -n "${PROJECT_DIR}" ]]; then
   ln -s "${SCRIPT_DIR}/hooks.json" "${PROJECT_DIR}/.antigravity/hooks.json"
   echo "✓ Symlinked hooks.json to project customization root: ${PROJECT_DIR}/_agents/hooks.json"
 
-  # Update plugins.json safely using python to preserve existing entries (e.g. chitragupta)
+  # Update plugins.json safely using python to preserve existing entries
   python3 - "${PROJECT_DIR}/_agents/plugins.json" "${SCRIPT_DIR}" <<'PY'
 import json, os, sys
 path, plugin_dir = sys.argv[1], sys.argv[2]
