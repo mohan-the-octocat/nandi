@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # Nandi Installer
-# Installs and validates Nandi for Google Antigravity / Jetski.
+# Installs and validates Nandi for Google Antigravity.
 # Supports global installation or project-scoped installation (-p / --project-dir).
 # ==============================================================================
 set -euo pipefail
@@ -21,7 +21,7 @@ Options:
   -h, --help               Show this help message
 
 Examples:
-  ./install.sh --project-dir /usr/local/google/home/mohansridharan/.gemini/jetski/scratch
+  ./install.sh --project-dir /path/to/my-project
   ./install.sh -p .
   ./install.sh
 EOF
