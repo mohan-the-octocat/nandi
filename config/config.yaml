@@ -1,5 +1,5 @@
-# Antigravity FSI India Guard - Master Configuration File
-# Designed for Indian Financial Services Institutions under RBI & SEBI Governance
+# Nandi (Antigravity FSI India Guard) - Master Configuration File
+# The Incorruptible Threshold Guardian: Designed for Indian Financial Services Institutions under RBI & SEBI Governance
 
 version: "1.0.0"
 environment: "production" # development, staging, production

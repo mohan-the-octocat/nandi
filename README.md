@@ -1,12 +1,13 @@
-# Antigravity FSI India Guard Plugin
+# Nandi (Antigravity FSI India Guard)
 
+[![Plugin: Nandi](https://img.shields.io/badge/Plugin-Nandi%20(FSI%20Guard)-purple)](plugin.json)
 [![Compliance: RBI IT Governance 2023](https://img.shields.io/badge/Compliance-RBI%20IT%20Governance%202023-blue)](docs/RBI_COMPLIANCE.md)
 [![Compliance: SEBI CSCRF 2024](https://img.shields.io/badge/Compliance-SEBI%20CSCRF%202024-green)](docs/SEBI_COMPLIANCE.md)
 [![Compliance: DPDP Act 2023](https://img.shields.io/badge/Compliance-DPDP%20Act%202023-orange)](docs/RBI_COMPLIANCE.md)
 [![Security: Google Cloud Model Armor](https://img.shields.io/badge/Security-Google%20Cloud%20Model%20Armor-red)](docs/MODEL_ARMOR_SETUP.md)
-[![Test Suite: 100% Pass](https://img.shields.io/badge/Tests-25%2F25%20Passing-brightgreen)](tests/run_all_tests.py)
+[![Test Suite: 100% Pass](https://img.shields.io/badge/Tests-27%2F27%20Passing-brightgreen)](tests/run_all_tests.py)
 
-Enterprise-grade Governance, Risk, and Compliance (GRC) Antigravity Plugin providing real-time **Indian PII Regex/Checksum Protection** and **Google Cloud Model Armor Safety Filtering** for Financial Services Institutions (Banks, NBFCs, Stock Brokers, AMCs, FinTechs) in India.
+**Nandi** (*The Incorruptible Threshold Guardian*): Enterprise-grade Governance, Risk, and Compliance (GRC) Antigravity Plugin providing real-time **Indian PII Regex/Checksum Protection** and **Google Cloud Model Armor Safety Filtering** for Financial Services Institutions (Banks, NBFCs, Stock Brokers, AMCs, FinTechs) in India.
 
 ---
 
@@ -46,12 +47,12 @@ You can add this plugin to your local Antigravity 2.0 instance using any of the 
 ### Method 1: Global Installation (Recommended — Available across all workspaces)
 Clone the repository directly into your local Antigravity plugins directory:
 ```bash
-git clone https://github.com/mohan-the-octocat/antigravity-fsi-india-guard.git ~/.gemini/antigravity/plugins/antigravity-fsi-india-guard
+git clone https://github.com/mohan-the-octocat/antigravity-fsi-india-guard.git ~/.gemini/antigravity/plugins/nandi
 ```
 
 *Or, if you have already cloned the repository locally, symlink it:*
 ```bash
-ln -s /path/to/antigravity-fsi-india-guard ~/.gemini/antigravity/plugins/antigravity-fsi-india-guard
+ln -s /path/to/grc-plugin ~/.gemini/config/plugins/nandi
 ```
 
 ### Method 2: Workspace-Scoped Installation (Project-specific)
@@ -59,7 +60,7 @@ To enforce GRC guardrails only within a specific project or workspace repository
 ```bash
 cd /path/to/your/project-workspace
 mkdir -p .antigravity/plugins
-git clone https://github.com/mohan-the-octocat/antigravity-fsi-india-guard.git .antigravity/plugins/antigravity-fsi-india-guard
+git clone https://github.com/mohan-the-octocat/antigravity-fsi-india-guard.git .antigravity/plugins/nandi
 ```
 
 ### Method 3: Via Antigravity 2.0 UI Settings

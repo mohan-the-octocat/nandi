@@ -14,7 +14,7 @@ if plugin_root not in sys.path:
 
 def main():
     print("=" * 80)
-    print(" ANTIGRAVITY FSI INDIA GUARD - TEST SUITE RUNNER")
+    print(" NANDI (ANTIGRAVITY FSI INDIA GUARD) - TEST SUITE RUNNER")
     print("=" * 80)
 
     loader = unittest.TestLoader()

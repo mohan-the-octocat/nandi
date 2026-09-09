@@ -1,11 +1,12 @@
 {
-  "name": "antigravity-fsi-india-guard",
+  "name": "nandi",
   "version": "1.0.0",
-  "displayName": "Antigravity FSI India Guard (RBI & SEBI Compliance)",
-  "description": "Enterprise-grade GRC, PII Regex Protection, and Google Cloud Model Armor Security Plugin for Indian Financial Services Institutions (RBI, SEBI, DPDP Act 2023, IRDAI).",
+  "displayName": "Nandi - Indian FSI Compliance & Model Armor Guard",
+  "description": "Nandi (The Incorruptible Threshold Guardian): Enterprise-grade GRC, PII Regex Protection, and Google Cloud Model Armor Security Plugin for Indian Financial Services Institutions (RBI, SEBI, DPDP Act 2023, IRDAI).",
   "author": "Google Cloud FSI Solutions",
   "license": "Apache-2.0",
   "keywords": [
+    "nandi",
     "antigravity",
     "fsi",
     "india",
