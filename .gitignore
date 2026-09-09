@@ -47,7 +47,7 @@ Thumbs.db
 
 # Dynamic Logs (preserve directory via .gitkeep)
 logs/*.log
-client/logs/*.log
+AGY-Plugin/logs/*.log
 
 # Terraform local state and files in GCP/
 GCP/terraform/.terraform/

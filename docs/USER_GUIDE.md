@@ -11,9 +11,9 @@
 ```
 nandi/
 ├── bin/                        # Shell automation & installer scripts
-│   ├── install-nandi.sh        # 5-step hermetic installer (installs client/ into IDE)
+│   ├── install-nandi.sh        # 5-step hermetic installer (installs AGY-Plugin/ into IDE)
 │   └── setup-model-armor.sh    # Symlink to GCP/bin/setup-model-armor.sh
-├── client/                     # Antigravity IDE plugin (Installed into IDE)
+├── AGY-Plugin/                 # Antigravity IDE plugin (Installed into IDE)
 │   ├── plugin.json             # Antigravity plugin manifest
 │   ├── hooks.json              # Lifecycle hook bindings (PreInvocation, PreToolUse)
 │   ├── config/                 # PII regex patterns, Model Armor thresholds, RBI/SEBI policies
@@ -47,29 +47,29 @@ nandi/
 
 ### Test a Prompt against Guardrails
 ```bash
-python3 client/src/cli/grc_admin.py test-prompt "Please check KYC for customer Aadhaar 2345 6789 0124 and PAN ABCPE1234F"
+python3 AGY-Plugin/src/cli/grc_admin.py test-prompt "Please check KYC for customer Aadhaar 2345 6789 0124 and PAN ABCPE1234F"
 ```
 
 ### Validate a Specific Entity Algorithm
 ```bash
 # Validate Aadhaar Verhoeff checksum
-python3 client/src/cli/grc_admin.py test-entity AADHAAR "2345 6789 0124"
+python3 AGY-Plugin/src/cli/grc_admin.py test-entity AADHAAR "2345 6789 0124"
 
 # Validate Income Tax PAN
-python3 client/src/cli/grc_admin.py test-entity PAN "ABCPE1234F"
+python3 AGY-Plugin/src/cli/grc_admin.py test-entity PAN "ABCPE1234F"
 
 # Validate GSTIN Mod 36
-python3 client/src/cli/grc_admin.py test-entity GSTIN "27AADCS1234F1Z5"
+python3 AGY-Plugin/src/cli/grc_admin.py test-entity GSTIN "27AADCS1234F1Z5"
 ```
 
 ### Inspect Tamper-Resistant Audit Log
 ```bash
-python3 client/src/cli/grc_admin.py show-audit --tail 15
+python3 AGY-Plugin/src/cli/grc_admin.py show-audit --tail 15
 ```
 
 ### Verify Regulatory Compliance Coverage
 ```bash
-python3 client/src/cli/grc_admin.py verify-compliance --framework ALL
+python3 AGY-Plugin/src/cli/grc_admin.py verify-compliance --framework ALL
 ```
 
 ---

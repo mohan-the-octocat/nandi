@@ -9,9 +9,9 @@ import unittest
 from unittest.mock import patch
 
 repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-client_root = os.path.join(repo_root, "client")
-if client_root not in sys.path:
-    sys.path.insert(0, client_root)
+plugin_root = os.path.join(repo_root, "AGY-Plugin")
+if plugin_root not in sys.path:
+    sys.path.insert(0, plugin_root)
 if repo_root not in sys.path:
     sys.path.insert(0, repo_root)
 
@@ -25,10 +25,12 @@ class TestHooks(unittest.TestCase):
 
     def _invoke_hook(self, script_path, payload, env_override=None, expect_exit_code=0):
         repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        if script_path.startswith("client/"):
+        if script_path.startswith("AGY-Plugin/"):
             full_script_path = os.path.join(repo_root, script_path)
+        elif script_path.startswith("client/"):
+            full_script_path = os.path.join(repo_root, "AGY-Plugin", script_path[len("client/") :])
         else:
-            full_script_path = os.path.join(repo_root, "client", script_path)
+            full_script_path = os.path.join(repo_root, "AGY-Plugin", script_path)
         env = dict(os.environ)
         if env_override:
             env.update(env_override)

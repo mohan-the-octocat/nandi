@@ -78,7 +78,7 @@ terraform apply
 ```
 
 ### Step 5: Update Antigravity Plugin Configuration
-After completion, Terraform will output the snippet to add to [`client/config/config.yaml`](../../client/config/config.yaml):
+After completion, Terraform will output the snippet to add to [`AGY-Plugin/config/config.yaml`](../../AGY-Plugin/config/config.yaml):
 ```yaml
 model_armor:
   enabled: true

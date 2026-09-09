@@ -1,6 +1,6 @@
-# Nandi - Client Plugin for Google Antigravity
+# Nandi - Antigravity Plugin (AGY-Plugin)
 
-This directory contains the **Nandi (The Incorruptible Threshold Guardian)** client plugin for Google Antigravity.
+This directory contains the **Nandi (The Incorruptible Threshold Guardian)** plugin componentry for Google Antigravity.
 
 Nandi operates directly within the developer's Antigravity IDE environment, inspecting prompts and tool executions in real-time through lifecycle hooks to enforce strict Indian Financial Services Institution (FSI) compliance and AI guardrails.
 
@@ -9,7 +9,7 @@ Nandi operates directly within the developer's Antigravity IDE environment, insp
 ## Directory Layout
 
 ```
-client/
+AGY-Plugin/
 ├── config/                          # Local policy & pattern configurations
 │   ├── config.yaml                  # Master plugin configuration
 │   ├── model_armor_policy.json      # Model Armor decision thresholds & mappings
@@ -79,4 +79,4 @@ The client plugin is installed and managed via the root installer script:
 ./bin/install-nandi.sh --system
 ```
 
-When installed, only this `client/` directory is symlinked into Antigravity (`~/.gemini/config/plugins/nandi` or `<project>/_agents/plugins/nandi`). Server-side GCP infrastructure templates (`GCP/`) remain external and uninstalled.
+When installed, only this `AGY-Plugin/` directory is symlinked into Antigravity (`~/.gemini/config/plugins/nandi` or `<project>/_agents/plugins/nandi`). Server-side GCP infrastructure templates (`GCP/`) remain external and uninstalled.

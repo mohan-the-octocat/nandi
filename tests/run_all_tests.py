@@ -6,11 +6,11 @@ import sys
 import time
 import unittest
 
-# Ensure client root and repo root are in python path
+# Ensure plugin root and repo root are in python path
 repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-client_root = os.path.join(repo_root, "client")
-if client_root not in sys.path:
-    sys.path.insert(0, client_root)
+plugin_root = os.path.join(repo_root, "AGY-Plugin")
+if plugin_root not in sys.path:
+    sys.path.insert(0, plugin_root)
 if repo_root not in sys.path:
     sys.path.insert(0, repo_root)
 

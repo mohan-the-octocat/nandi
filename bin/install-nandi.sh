@@ -14,7 +14,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-PLUGIN_ROOT="${REPO_ROOT}/client"
+PLUGIN_ROOT="${REPO_ROOT}/AGY-Plugin"
 GCP_ROOT="${REPO_ROOT}/GCP"
 
 GLOBAL_TARGET_DIR_1="${HOME}/.gemini/antigravity/plugins"
@@ -86,7 +86,7 @@ echo "============================================================"
 echo " Nandi Installer (The Incorruptible Threshold Guardian)"
 echo "============================================================"
 echo "Repository Root Directory : ${REPO_ROOT}"
-echo "Client Plugin Directory   : ${PLUGIN_ROOT}"
+echo "AGY-Plugin Directory      : ${PLUGIN_ROOT}"
 echo "GCP Server Infrastructure : ${GCP_ROOT}"
 if [[ "${USE_VENV}" == "true" ]]; then
   echo "Python Runtime Mode  : Isolated Virtual Environment (${PLUGIN_ROOT}/.venv)"
@@ -239,7 +239,7 @@ REQUIRED_FILES=(
 
 for file in "${REQUIRED_FILES[@]}"; do
   if [[ ! -f "${PLUGIN_ROOT}/${file}" ]]; then
-    echo "❌ Missing required client plugin file: ${file}" >&2
+    echo "❌ Missing required AGY-Plugin file: ${file}" >&2
     echo "   Please verify that your git repository clone is complete and intact." >&2
     exit 1
   fi
@@ -260,7 +260,7 @@ for file in "${GCP_REQUIRED_FILES[@]}"; do
     exit 1
   fi
 done
-echo "  ✓ Local client and GCP repository integrity verified"
+echo "  ✓ Local AGY-Plugin and GCP repository integrity verified"
 
 # ------------------------------------------------------------------------------
 # 2. Google Cloud Authentication ('gcloud auth application-default login')

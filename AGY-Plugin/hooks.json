@@ -4,7 +4,7 @@
     "PreInvocation": [
       {
         "type": "command",
-        "command": "/usr/bin/python3 /usr/local/google/home/mohansridharan/repos/grc-plugin/client/src/hooks/pii_hook.py",
+        "command": "/usr/bin/python3 /usr/local/google/home/mohansridharan/repos/grc-plugin/AGY-Plugin/src/hooks/pii_hook.py",
         "timeout": 15
       }
     ],
@@ -14,7 +14,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/usr/bin/python3 /usr/local/google/home/mohansridharan/repos/grc-plugin/client/src/hooks/pii_hook.py",
+            "command": "/usr/bin/python3 /usr/local/google/home/mohansridharan/repos/grc-plugin/AGY-Plugin/src/hooks/pii_hook.py",
             "timeout": 15
           }
         ]
@@ -26,7 +26,7 @@
     "PreInvocation": [
       {
         "type": "command",
-        "command": "/usr/bin/python3 /usr/local/google/home/mohansridharan/repos/grc-plugin/client/src/hooks/model_armor_hook.py",
+        "command": "/usr/bin/python3 /usr/local/google/home/mohansridharan/repos/grc-plugin/AGY-Plugin/src/hooks/model_armor_hook.py",
         "timeout": 30
       }
     ],
@@ -36,7 +36,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/usr/bin/python3 /usr/local/google/home/mohansridharan/repos/grc-plugin/client/src/hooks/model_armor_hook.py",
+            "command": "/usr/bin/python3 /usr/local/google/home/mohansridharan/repos/grc-plugin/AGY-Plugin/src/hooks/model_armor_hook.py",
             "timeout": 30
           }
         ]
@@ -48,7 +48,7 @@
     "PreInvocation": [
       {
         "type": "command",
-        "command": "/usr/bin/python3 /usr/local/google/home/mohansridharan/repos/grc-plugin/client/src/hooks/combined_guard_hook.py",
+        "command": "/usr/bin/python3 /usr/local/google/home/mohansridharan/repos/grc-plugin/AGY-Plugin/src/hooks/combined_guard_hook.py",
         "timeout": 35
       }
     ],
@@ -58,7 +58,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/usr/bin/python3 /usr/local/google/home/mohansridharan/repos/grc-plugin/client/src/hooks/combined_guard_hook.py",
+            "command": "/usr/bin/python3 /usr/local/google/home/mohansridharan/repos/grc-plugin/AGY-Plugin/src/hooks/combined_guard_hook.py",
             "timeout": 35
           }
         ]
