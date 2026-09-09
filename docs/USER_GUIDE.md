@@ -10,10 +10,9 @@
 
 ```
 nandi/
-├── bin/                        # Shell automation & installer scripts
-│   ├── install-nandi.sh        # 5-step hermetic installer (installs AGY-Plugin/ into IDE)
-│   └── setup-model-armor.sh    # Symlink to GCP/bin/setup-model-armor.sh
 ├── AGY-Plugin/                 # Antigravity IDE plugin (Installed into IDE)
+│   ├── bin/                    # Plugin installer automation
+│   │   └── install-nandi.sh    # 5-step hermetic installer (installs AGY-Plugin/ into IDE)
 │   ├── plugin.json             # Antigravity plugin manifest
 │   ├── hooks.json              # Lifecycle hook bindings (PreInvocation, PreToolUse)
 │   ├── config/                 # PII regex patterns, Model Armor thresholds, RBI/SEBI policies

@@ -10,6 +10,8 @@ Nandi operates directly within the developer's Antigravity IDE environment, insp
 
 ```
 AGY-Plugin/
+├── bin/                             # Plugin installer automation
+│   └── install-nandi.sh             # 5-step installer (installs AGY-Plugin into IDE)
 ├── config/                          # Local policy & pattern configurations
 │   ├── config.yaml                  # Master plugin configuration
 │   ├── model_armor_policy.json      # Model Armor decision thresholds & mappings
@@ -66,17 +68,17 @@ AGY-Plugin/
 
 ## Installation & Runtime
 
-The client plugin is installed and managed via the root installer script:
+The client plugin is installed and managed via the installer script:
 
 ```bash
 # Default: Installs with hermetic isolated virtual environment (.venv)
-./bin/install-nandi.sh
+./AGY-Plugin/bin/install-nandi.sh
 
 # Project-scoped installation (isolated to a single project):
-./bin/install-nandi.sh -p /path/to/my-project
+./AGY-Plugin/bin/install-nandi.sh -p /path/to/my-project
 
 # System Python override:
-./bin/install-nandi.sh --system
+./AGY-Plugin/bin/install-nandi.sh --system
 ```
 
 When installed, only this `AGY-Plugin/` directory is symlinked into Antigravity (`~/.gemini/config/plugins/nandi` or `<project>/_agents/plugins/nandi`). Server-side GCP infrastructure templates (`GCP/`) remain external and uninstalled.

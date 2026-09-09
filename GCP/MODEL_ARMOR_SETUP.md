@@ -13,11 +13,8 @@ An end-to-end setup script is provided at [`GCP/bin/setup-model-armor.sh`](./bin
 
 ### Running the Setup Script:
 ```bash
-# Direct execution from GCP directory:
+# Automated setup (checks tools, enables APIs, configures IAM, deploys template, validates live sanitization):
 ./GCP/bin/setup-model-armor.sh
-
-# Or from repository root:
-./bin/setup-model-armor.sh
 
 # With custom project or region:
 ./GCP/bin/setup-model-armor.sh --project your-gcp-project --region asia-south1

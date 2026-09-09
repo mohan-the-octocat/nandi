@@ -165,6 +165,8 @@ Nandi enforces a clean architectural separation between **Client-Side Plugin Con
 ```
 repo-root/
 ├── AGY-Plugin/                      # Antigravity Developer Plugin (Installed)
+│   ├── bin/                         # Plugin installer automation
+│   │   └── install-nandi.sh         # 5-step installer (installs AGY-Plugin/ into IDE)
 │   ├── config/                      # Local PII & Model Armor policy configs
 │   ├── hooks.json                   # PreInvocation & PreToolUse lifecycle hooks
 │   ├── logs/                        # Local tamper-evident audit logs
@@ -184,13 +186,10 @@ repo-root/
 │   ├── MODEL_ARMOR_SETUP.md         # In-depth server deployment guide
 │   └── README.md                    # GCP infrastructure architecture & operations
 │
-├── bin/                             # Unified tooling & installer
-│   ├── install-nandi.sh             # 5-step installer (installs AGY-Plugin/ into IDE)
-│   └── setup-model-armor.sh         # Symlink to GCP/bin/setup-model-armor.sh
 └── tests/                           # Unit & end-to-end test suite
 ```
 
 ### Separation Guarantees
-1. **Zero Cloud Infrastructure in Plugin**: When `bin/install-nandi.sh` installs the plugin into `~/.gemini/config/plugins/nandi` or `<project>/_agents/plugins/nandi`, it symlinks exclusively `${REPO_ROOT}/AGY-Plugin`. The server infrastructure (`GCP/`) and Terraform state are never copied or linked into the developer IDE.
+1. **Zero Cloud Infrastructure in Plugin**: When `AGY-Plugin/bin/install-nandi.sh` installs the plugin into `~/.gemini/config/plugins/nandi` or `<project>/_agents/plugins/nandi`, it symlinks exclusively `${REPO_ROOT}/AGY-Plugin`. The server infrastructure (`GCP/`) and Terraform state are never copied or linked into the developer IDE.
 2. **Centralized Infrastructure Governance**: Cloud engineers and DevSecOps teams maintain and apply Terraform from `GCP/terraform` independently of developer plugin installations.
 3. **Hermetic Client Execution**: The client runs in an isolated Python `.venv` with zero mandatory pip dependencies, executing local regex checks in sub-millisecond time before invoking GCP Model Armor regional endpoints.

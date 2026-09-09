@@ -53,7 +53,7 @@ Nandi separates concerns into a clean, two-tier decoupled architecture:
 │  • 7-Year Regulatory Cloud Logging Bucket (RBI & SEBI Retention)       │
 │  • IAM RBAC: Service Account & User Permissions                        │
 │                                                                        │
-│  Provisioning: ./bin/setup-model-armor.sh  OR  GCP/terraform/          │
+│  Provisioning: ./GCP/bin/setup-model-armor.sh  OR  GCP/terraform/      │
 └───────────────────────────────────┬────────────────────────────────────┘
                                     │ Regional REST API
                                     │ (Fail-Closed Gate)
@@ -65,7 +65,7 @@ Nandi separates concerns into a clean, two-tier decoupled architecture:
 │  • Regulatory Rules: RBI IT Governance, SEBI CSCRF, DPDP Act 2023      │
 │  • Tamper-Evident SHA-256 Forward-Chained Local Audit Trail            │
 │                                                                        │
-│  Installation: ./bin/install-nandi.sh                                  │
+│  Installation: ./AGY-Plugin/bin/install-nandi.sh                       │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -86,17 +86,17 @@ Before developers run the Nandi plugin with live Model Armor checks, the GCP clo
 Choose one of the three deployment options below:
 
 ### Option A: Automated Setup Script (Recommended & Quickest)
-An end-to-end automated shell script is provided at [`bin/setup-model-armor.sh`](file:///usr/local/google/home/mohansridharan/repos/grc-plugin/bin/setup-model-armor.sh) (and [`GCP/bin/setup-model-armor.sh`](file:///usr/local/google/home/mohansridharan/repos/grc-plugin/GCP/bin/setup-model-armor.sh)) that handles all cloud configuration in under 2 minutes:
+An end-to-end automated shell script is provided at [`GCP/bin/setup-model-armor.sh`](file:///usr/local/google/home/mohansridharan/repos/grc-plugin/GCP/bin/setup-model-armor.sh) that handles all cloud configuration in under 2 minutes:
 
 ```bash
 # 1. Run automated setup with default settings (stratosphere-461622 / asia-south1)
-./bin/setup-model-armor.sh
+./GCP/bin/setup-model-armor.sh
 
 # 2. Or specify custom project, region, or service account
-./bin/setup-model-armor.sh --project your-gcp-project-id --region asia-south1
+./GCP/bin/setup-model-armor.sh --project your-gcp-project-id --region asia-south1
 
 # 3. Or deploy via Terraform engine through the script
-./bin/setup-model-armor.sh --mode terraform
+./GCP/bin/setup-model-armor.sh --mode terraform
 ```
 
 **What the script does automatically:**
@@ -168,26 +168,26 @@ Once the server-side infrastructure is deployed, install the Nandi client plugin
 ---
 
 ### Method 1: Automated 5-Step Installer (Recommended)
-Run the root installer script [`bin/install-nandi.sh`](file:///usr/local/google/home/mohansridharan/repos/grc-plugin/bin/install-nandi.sh):
+Run the installer script [`AGY-Plugin/bin/install-nandi.sh`](file:///usr/local/google/home/mohansridharan/repos/grc-plugin/AGY-Plugin/bin/install-nandi.sh):
 
 ```bash
 git clone https://github.com/mohan-the-octocat/nandi.git
 cd nandi
 
 # Standard Installation (Provisions hermetic, isolated virtual environment at AGY-Plugin/.venv)
-./bin/install-nandi.sh
+./AGY-Plugin/bin/install-nandi.sh
 ```
 
 #### Installer Options
 ```bash
 # Project-Scoped Installation (restricts hooks exclusively to a specific project repository):
-./bin/install-nandi.sh --project-dir /path/to/your/project-workspace
+./AGY-Plugin/bin/install-nandi.sh --project-dir /path/to/your/project-workspace
 
 # System Python Override (uses host Python instead of isolated .venv):
-./bin/install-nandi.sh --system
+./AGY-Plugin/bin/install-nandi.sh --system
 
 # Clean Rebuild (forces re-creation of virtual environment):
-./bin/install-nandi.sh --recreate-venv
+./AGY-Plugin/bin/install-nandi.sh --recreate-venv
 ```
 
 #### What the installer executes:
@@ -289,9 +289,9 @@ Verifies SHA-256 forward-chained tamper-evident log integrity with dual UTC and 
 | :--- | :--- | :--- |
 | **Plugin not visible in Antigravity** | Discovery path not indexed | Ensure `AGY-Plugin/plugin.json` exists. Explicitly add `/path/to/nandi/AGY-Plugin` to `~/.gemini/config/plugins.json`. |
 | **Model Armor HTTP 401 Unauthorized** | Expired or missing GCP credentials | Run `gcloud auth application-default login` or export `GOOGLE_OAUTH_ACCESS_TOKEN`. |
-| **Model Armor HTTP 404 Not Found** | Template not deployed in region | Run `./bin/setup-model-armor.sh --project <PROJECT> --region asia-south1` or check `AGY-Plugin/config/config.yaml`. |
+| **Model Armor HTTP 404 Not Found** | Template not deployed in region | Run `./GCP/bin/setup-model-armor.sh --project <PROJECT> --region asia-south1` or check `AGY-Plugin/config/config.yaml`. |
 | **Model Armor HTTP 403 Forbidden** | Missing IAM roles on GCP identity | Assign `roles/modelarmor.user` and `roles/modelarmor.viewer` to active user or service account. |
-| **Permission Denied on Hook Scripts** | Scripts not marked executable | Run `chmod +x AGY-Plugin/src/hooks/*.py AGY-Plugin/src/cli/grc_admin.py bin/*.sh`. |
+| **Permission Denied on Hook Scripts** | Scripts not marked executable | Run `chmod +x AGY-Plugin/src/hooks/*.py AGY-Plugin/src/cli/grc_admin.py AGY-Plugin/bin/*.sh GCP/bin/*.sh`. |
 | **Fail-Closed Gate Denial** | Security gate defaults to block on error | Verify network connectivity to `modelarmor.asia-south1.rep.googleapis.com` and valid ADC token. |
 
 ---

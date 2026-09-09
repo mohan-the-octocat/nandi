@@ -1,1 +1,0 @@
-../GCP/bin/setup-model-armor.sh

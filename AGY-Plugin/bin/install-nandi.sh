@@ -13,8 +13,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-PLUGIN_ROOT="${REPO_ROOT}/AGY-Plugin"
+PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+REPO_ROOT="$(cd "${PLUGIN_ROOT}/.." && pwd)"
 GCP_ROOT="${REPO_ROOT}/GCP"
 
 GLOBAL_TARGET_DIR_1="${HOME}/.gemini/antigravity/plugins"
@@ -28,7 +28,7 @@ SKIP_VALIDATION=false
 
 print_usage() {
   cat <<EOF
-Usage: ./bin/install-nandi.sh [OPTIONS]
+Usage: ./AGY-Plugin/bin/install-nandi.sh [OPTIONS]
 
 Options:
   -p, --project-dir DIR    Install plugin scoped to a specific project alone (project-scoped)
@@ -39,11 +39,11 @@ Options:
   -h, --help               Show this help message
 
 Examples:
-  ./bin/install-nandi.sh                 # Default: installs with hermetic .venv
-  ./bin/install-nandi.sh --system        # Override: uses host system python3
-  ./bin/install-nandi.sh --project-dir /path/to/my-project
-  ./bin/install-nandi.sh -p .
-  ./bin/install-nandi.sh --skip-auth
+  ./AGY-Plugin/bin/install-nandi.sh                 # Default: installs with hermetic .venv
+  ./AGY-Plugin/bin/install-nandi.sh --system        # Override: uses host system python3
+  ./AGY-Plugin/bin/install-nandi.sh --project-dir /path/to/my-project
+  ./AGY-Plugin/bin/install-nandi.sh -p .
+  ./AGY-Plugin/bin/install-nandi.sh --skip-auth
 EOF
 }
 
@@ -225,6 +225,7 @@ echo "    Active gcloud Project : ${GCLOUD_PROJECT}"
 REQUIRED_FILES=(
   "plugin.json"
   "hooks.json"
+  "bin/install-nandi.sh"
   "config/config.yaml"
   "config/pii_patterns.json"
   "config/model_armor_policy.json"
