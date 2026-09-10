@@ -56,7 +56,7 @@ GCP/terraform/*.tfstate
 GCP/terraform/*.tfstate.*
 GCP/terraform/terraform.tfvars
 GCP/terraform/generated_model_armor_template.json
-GCP/generated_model_armor_template.json
+
 
 .agents/*
 _agents/*

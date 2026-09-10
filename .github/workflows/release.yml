@@ -151,8 +151,14 @@ jobs:
           # Terraform infrastructure module
           cp -rp GCP/terraform "${SERVER_DIR}/"
 
-          # Model Armor templates and technical documentation
-          cp -p GCP/generated_model_armor_template.json "${SERVER_DIR}/"
+          # Model Armor template JSON (use repository template or generate default)
+          if [ -f "GCP/generated_model_armor_template.json" ]; then
+            cp -p GCP/generated_model_armor_template.json "${SERVER_DIR}/"
+          else
+            cat << 'JSONEOF' > "${SERVER_DIR}/generated_model_armor_template.json"
+{"filter_config":{"pi_and_jailbreak_filter_settings":{"confidence_level":"LOW_AND_ABOVE","filter_enforcement":"ENABLED"},"rai_settings":{"rai_filters":[{"confidence_level":"MEDIUM_AND_ABOVE","filter_type":"HATE_SPEECH"},{"confidence_level":"MEDIUM_AND_ABOVE","filter_type":"HARASSMENT"},{"confidence_level":"LOW_AND_ABOVE","filter_type":"SEXUALLY_EXPLICIT"},{"confidence_level":"LOW_AND_ABOVE","filter_type":"DANGEROUS"}]}},"template_metadata":{"custom_prompt_safety_error_message":"Prompt blocked by FSI Model Armor security policy."}}
+JSONEOF
+          fi
           cp -p GCP/MODEL_ARMOR_SETUP.md "${SERVER_DIR}/"
           cp -p GCP/README.md "${SERVER_DIR}/"
 
