@@ -78,6 +78,9 @@ class ModelArmorClient:
 
     def _get_auth_token(self) -> Optional[str]:
         """Retrieves GCP OAuth2 access token via environment, token file, google-auth ADC, or gcloud."""
+        if os.environ.get("MODEL_ARMOR_NO_AUTH") == "1":
+            return None
+
         if ModelArmorClient._auth_attempted:
             return ModelArmorClient._cached_token
 

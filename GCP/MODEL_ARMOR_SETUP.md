@@ -13,11 +13,8 @@ An end-to-end setup script is provided at [`GCP/bin/setup-model-armor.sh`](./bin
 
 ### Running the Setup Script:
 ```bash
-# Automated setup (checks tools, enables APIs, configures IAM, deploys template, validates live sanitization):
-./GCP/bin/setup-model-armor.sh
-
-# With custom project or region:
-./GCP/bin/setup-model-armor.sh --project your-gcp-project --region asia-south1
+# Automated setup (requires --project-id):
+./GCP/bin/setup-model-armor.sh --project-id your-gcp-project-id --region asia-south1
 ```
 
 ---
@@ -73,25 +70,22 @@ curl -X POST \
   -H "X-Goog-User-Project: stratosphere-461622" \
   "https://modelarmor.asia-south1.rep.googleapis.com/v1/projects/stratosphere-461622/locations/asia-south1/templates?templateId=fsi-india-compliance-template" \
   -d '{
-    "displayName": "India FSI Governance & Safety Template",
-    "description": "Model Armor template enforcing RBI and SEBI guardrails against prompt injection, toxic content, data leakage, and malicious URLs.",
-    "filterConfig": {
-      "piAndJailbreakFilterConfig": {
-        "filterEnforcement": "ENFORCE",
-        "confidenceLevel": "LOW_AND_ABOVE"
+    "filter_config": {
+      "pi_and_jailbreak_filter_settings": {
+        "filter_enforcement": "ENABLED",
+        "confidence_level": "LOW_AND_ABOVE"
       },
-      "raiFilterConfig": {
-        "hateSpeech": { "filterEnforcement": "ENFORCE", "confidenceLevel": "MEDIUM_AND_ABOVE" },
-        "harassment": { "filterEnforcement": "ENFORCE", "confidenceLevel": "MEDIUM_AND_ABOVE" },
-        "sexuallyExplicit": { "filterEnforcement": "ENFORCE", "confidenceLevel": "LOW_AND_ABOVE" },
-        "dangerousContent": { "filterEnforcement": "ENFORCE", "confidenceLevel": "LOW_AND_ABOVE" }
-      },
-      "maliciousUriFilterConfig": {
-        "filterEnforcement": "ENFORCE"
-      },
-      "multiLanguageConfig": {
-        "enableMultiLanguageDetection": true
+      "rai_settings": {
+        "rai_filters": [
+          { "filter_type": "HATE_SPEECH", "confidence_level": "MEDIUM_AND_ABOVE" },
+          { "filter_type": "HARASSMENT", "confidence_level": "MEDIUM_AND_ABOVE" },
+          { "filter_type": "SEXUALLY_EXPLICIT", "confidence_level": "LOW_AND_ABOVE" },
+          { "filter_type": "DANGEROUS", "confidence_level": "LOW_AND_ABOVE" }
+        ]
       }
+    },
+    "template_metadata": {
+      "custom_prompt_safety_error_message": "Prompt blocked by FSI Model Armor security policy."
     }
   }'
 ```

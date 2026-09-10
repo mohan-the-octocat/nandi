@@ -52,7 +52,7 @@ EOF
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    -p|--project-dir|--project)
+    -p|--project-dir)
       mkdir -p "$2"
       PROJECT_DIR="$(cd "$2" && pwd)"
       shift 2

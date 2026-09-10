@@ -83,11 +83,8 @@ These components are decoupled from the client developer plugin and are deployed
 
 Run the end-to-end setup script:
 ```bash
-# Automated setup (checks tools, enables APIs, configures IAM, deploys template, verifies with test prompt)
-./GCP/bin/setup-model-armor.sh
-
-# Or with custom project and region
-./GCP/bin/setup-model-armor.sh --project your-gcp-project --region asia-south1
+# Automated setup (requires --project-id; checks tools, enables APIs, configures IAM, deploys template, verifies with test prompt)
+./GCP/bin/setup-model-armor.sh --project-id your-gcp-project-id --region asia-south1
 ```
 
 ### Option B: Automated Terraform Deployment

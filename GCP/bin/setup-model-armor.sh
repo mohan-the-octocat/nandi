@@ -18,7 +18,6 @@ GCP_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 REPO_ROOT="$(cd "${GCP_DIR}/.." && pwd)"
 
 # Default Configuration
-DEFAULT_PROJECT_ID="stratosphere-461622"
 DEFAULT_REGION="asia-south1"
 DEFAULT_TEMPLATE_ID="fsi-india-compliance-template"
 DEFAULT_SA_NAME="sa-nandi-guard"
@@ -35,13 +34,15 @@ SKIP_AUTH=false
 
 print_usage() {
   cat <<EOF
-Usage: ./GCP/bin/setup-model-armor.sh [OPTIONS]
+Usage: ./GCP/bin/setup-model-armor.sh -p PROJECT_ID [OPTIONS]
 
 Automates Google Cloud Model Armor template creation, API enablement, IAM role bindings,
 and end-to-end sanitization testing.
 
-Options:
-  -p, --project PROJECT_ID     Target GCP Project ID (default: active gcloud project or ${DEFAULT_PROJECT_ID})
+Required Options:
+  -p, --project-id PROJECT_ID  Target GCP Project ID (REQUIRED; e.g. 'my-project-123456')
+
+Optional Configuration:
   -r, --region REGION          Target GCP Region (default: ${DEFAULT_REGION})
   -t, --template-id ID         Model Armor Template ID (default: ${DEFAULT_TEMPLATE_ID})
   -s, --service-account EMAIL  Service account email to grant Model Armor & Logging roles
@@ -53,16 +54,16 @@ Options:
   -h, --help                   Display this help message
 
 Examples:
-  ./GCP/bin/setup-model-armor.sh
-  ./GCP/bin/setup-model-armor.sh --project my-gcp-project --region asia-south1
-  ./GCP/bin/setup-model-armor.sh --mode terraform
-  ./GCP/bin/setup-model-armor.sh --service-account sa-nandi-guard@my-project.iam.gserviceaccount.com
+  ./GCP/bin/setup-model-armor.sh --project-id my-gcp-project-123456
+  ./GCP/bin/setup-model-armor.sh --project-id my-gcp-project-123456 --region asia-south1
+  ./GCP/bin/setup-model-armor.sh --project-id my-gcp-project-123456 --mode terraform
+  ./GCP/bin/setup-model-armor.sh --project-id my-gcp-project-123456 --service-account sa-nandi-guard@my-project.iam.gserviceaccount.com
 EOF
 }
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    -p|--project|--project-id)
+    -p|--project-id|--project)
       PROJECT_ID="$2"
       shift 2
       ;;
@@ -134,12 +135,13 @@ if ! command -v python3 &>/dev/null; then
   exit 1
 fi
 
-# 1.2 Resolve target project ID
+# 1.2 Validate mandatory target project ID
 if [[ -z "${PROJECT_ID}" ]]; then
-  PROJECT_ID="$(gcloud config get-value project 2>/dev/null || echo "")"
-  if [[ -z "${PROJECT_ID}" || "${PROJECT_ID}" == "(unset)" ]]; then
-    PROJECT_ID="${DEFAULT_PROJECT_ID}"
-  fi
+  echo "❌ Error: Missing mandatory option: -p, --project-id PROJECT_ID" >&2
+  echo "   A valid GCP Project ID must be explicitly provided." >&2
+  echo "" >&2
+  print_usage >&2
+  exit 1
 fi
 
 # 1.3 Resolve region and template ID
@@ -211,6 +213,20 @@ if ! TOKEN="$(get_access_token)"; then
 fi
 
 echo "✓ GCP OAuth authentication verified (Token acquired)."
+
+# 1.5 Validate target GCP Project ID (strictly require project ID, not project name)
+if ! gcloud projects describe "${PROJECT_ID}" &>/dev/null; then
+  echo "❌ Error: Project ID '${PROJECT_ID}' was not found or permission denied." >&2
+  MATCHING_ID="$(gcloud projects list --filter="name='${PROJECT_ID}'" --format="value(projectId)" 2>/dev/null | head -n 1 || true)"
+  if [[ -n "${MATCHING_ID}" ]]; then
+    echo "   '${PROJECT_ID}' is a GCP Project Display Name, not a Project ID." >&2
+    echo "   Please specify the Project ID instead: --project-id ${MATCHING_ID}" >&2
+  else
+    echo "   Please provide a valid GCP Project ID (run 'gcloud projects list' to find your project ID)." >&2
+  fi
+  exit 1
+fi
+echo "✓ Target GCP Project ID verified: ${PROJECT_ID}"
 
 # ------------------------------------------------------------------------------
 # 2. Enable Required Google Cloud APIs
@@ -329,34 +345,40 @@ else
 
   PAYLOAD="$(python3 -c "
 import json
+region = '${REGION}'
 include_uri = '${INCLUDE_MALICIOUS_URI}'.lower() == 'true'
 
 filter_cfg = {
-    'piAndJailbreakFilterConfig': {
-        'filterEnforcement': 'ENFORCE',
-        'confidenceLevel': 'LOW_AND_ABOVE'
+    'pi_and_jailbreak_filter_settings': {
+        'filter_enforcement': 'ENABLED',
+        'confidence_level': 'LOW_AND_ABOVE'
     },
-    'raiFilterConfig': {
-        'hateSpeech': {'filterEnforcement': 'ENFORCE', 'confidenceLevel': 'MEDIUM_AND_ABOVE'},
-        'harassment': {'filterEnforcement': 'ENFORCE', 'confidenceLevel': 'MEDIUM_AND_ABOVE'},
-        'sexuallyExplicit': {'filterEnforcement': 'ENFORCE', 'confidenceLevel': 'LOW_AND_ABOVE'},
-        'dangerousContent': {'filterEnforcement': 'ENFORCE', 'confidenceLevel': 'LOW_AND_ABOVE'}
-    },
-    'multiLanguageConfig': {
-        'enableMultiLanguageDetection': True
+    'rai_settings': {
+        'rai_filters': [
+            {'filter_type': 'HATE_SPEECH', 'confidence_level': 'MEDIUM_AND_ABOVE'},
+            {'filter_type': 'HARASSMENT', 'confidence_level': 'MEDIUM_AND_ABOVE'},
+            {'filter_type': 'SEXUALLY_EXPLICIT', 'confidence_level': 'LOW_AND_ABOVE'},
+            {'filter_type': 'DANGEROUS', 'confidence_level': 'LOW_AND_ABOVE'}
+        ]
     }
 }
 
 if include_uri:
-    filter_cfg['maliciousUriFilterConfig'] = {'filterEnforcement': 'ENFORCE'}
+    filter_cfg['malicious_uri_filter_settings'] = {'filter_enforcement': 'ENABLED'}
+
+template_metadata = {
+    'custom_prompt_safety_error_message': 'Prompt blocked by FSI Model Armor security policy.'
+}
+
+# Multi-language detection is supported in global/US/EU regions; excluded in domestic Indian regions
+if region not in ['asia-south1', 'asia-south2']:
+    template_metadata['multi_language_detection'] = {
+        'enable_multi_language_detection': True
+    }
 
 data = {
-    'displayName': 'India FSI Governance & Safety Template',
-    'description': 'Model Armor template enforcing RBI and SEBI guardrails against prompt injection, toxic content, data leakage, and malicious URLs.',
-    'filterConfig': filter_cfg,
-    'templateMetadata': {
-        'customPromptSafetyErrorMessage': 'Prompt blocked by FSI Model Armor security policy.'
-    }
+    'filter_config': filter_cfg,
+    'template_metadata': template_metadata
 }
 print(json.dumps(data))
 ")"
@@ -364,7 +386,7 @@ print(json.dumps(data))
   if [[ "${HTTP_STATUS}" == "200" ]]; then
     echo "  ✓ Model Armor Template '${TEMPLATE_ID}' already exists (HTTP 200)."
     echo "  Synchronizing template filter settings via PATCH..."
-    PATCH_URL="${TEMPLATE_URL}?updateMask=filterConfig,templateMetadata,displayName,description"
+    PATCH_URL="${TEMPLATE_URL}?updateMask=filter_config,template_metadata"
     PATCH_RESP="$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X PATCH \
       -H "Authorization: Bearer ${TOKEN}" \
       -H "Content-Type: application/json; charset=utf-8" \

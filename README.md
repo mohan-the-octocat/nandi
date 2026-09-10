@@ -91,14 +91,14 @@ Choose one of the three deployment options below:
 An end-to-end automated shell script is provided at [`GCP/bin/setup-model-armor.sh`](GCP/bin/setup-model-armor.sh) that handles all cloud configuration in under 2 minutes:
 
 ```bash
-# 1. Run automated setup with default settings (stratosphere-461622 / asia-south1)
-./GCP/bin/setup-model-armor.sh
+# 1. Run automated setup (checks tools, enables APIs, configures IAM, deploys template, validates live sanitization):
+./GCP/bin/setup-model-armor.sh --project-id your-gcp-project-id
 
-# 2. Or specify custom project, region, or service account
-./GCP/bin/setup-model-armor.sh --project your-gcp-project-id --region asia-south1
+# 2. Or specify custom region or service account
+./GCP/bin/setup-model-armor.sh --project-id your-gcp-project-id --region asia-south1
 
 # 3. Or deploy via Terraform engine through the script
-./GCP/bin/setup-model-armor.sh --mode terraform
+./GCP/bin/setup-model-armor.sh --project-id your-gcp-project-id --mode terraform
 ```
 
 **What the script does automatically:**
@@ -287,7 +287,7 @@ Verifies SHA-256 forward-chained tamper-evident log integrity with dual UTC and 
 | :--- | :--- | :--- |
 | **Plugin not visible in Antigravity** | Discovery path not indexed | Ensure `AGY-Plugin/plugin.json` exists. Explicitly add `/path/to/nandi/AGY-Plugin` to `~/.gemini/config/plugins.json`. |
 | **Model Armor HTTP 401 Unauthorized** | Expired or missing GCP credentials | Run `gcloud auth application-default login` or export `GOOGLE_OAUTH_ACCESS_TOKEN`. |
-| **Model Armor HTTP 404 Not Found** | Template not deployed in region | Run `./GCP/bin/setup-model-armor.sh --project <PROJECT> --region asia-south1` or check `AGY-Plugin/config/config.yaml`. |
+| **Model Armor HTTP 404 Not Found** | Template not deployed in region | Run `./GCP/bin/setup-model-armor.sh --project-id <PROJECT_ID> --region asia-south1` or check `AGY-Plugin/config/config.yaml`. |
 | **Model Armor HTTP 403 Forbidden** | Missing IAM roles on GCP identity | Assign `roles/modelarmor.user` and `roles/modelarmor.viewer` to active user or service account. |
 | **Permission Denied on Hook Scripts** | Scripts not marked executable | Run `chmod +x AGY-Plugin/src/hooks/*.py AGY-Plugin/src/cli/grc_admin.py AGY-Plugin/bin/*.sh GCP/bin/*.sh`. |
 | **Fail-Closed Gate Denial** | Security gate defaults to block on error | Verify network connectivity to `modelarmor.asia-south1.rep.googleapis.com` and valid ADC token. |
