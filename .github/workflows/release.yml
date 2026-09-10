@@ -1,0 +1,322 @@
+name: Build & Publish Release Packages
+
+on:
+  push:
+    tags:
+      - 'v*'
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Release Tag (e.g. v1.0.0)'
+        required: false
+        default: 'v1.0.0'
+      draft:
+        description: 'Publish as Draft Release'
+        type: boolean
+        required: false
+        default: false
+      prerelease:
+        description: 'Publish as Pre-Release'
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-package:
+    name: Build & Package Releases
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set Release Version
+        id: vars
+        run: |
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            VERSION="${{ github.ref_name }}"
+          elif [[ -n "${{ inputs.tag_name }}" ]]; then
+            VERSION="${{ inputs.tag_name }}"
+          else
+            VERSION="v1.0.0-$(date +'%Y%m%d%H%M%S')"
+          fi
+          echo "VERSION=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Building packages for release version: ${VERSION}"
+
+      - name: Create Staging Directories
+        run: |
+          mkdir -p staging/nandi-client
+          mkdir -p staging/nandi-server
+          mkdir -p dist
+
+      # ========================================================================
+      # 1. Package Nandi-Client (Antigravity Plugin)
+      # ========================================================================
+      - name: Stage Nandi-Client Assets
+        run: |
+          CLIENT_DIR="staging/nandi-client"
+
+          echo "Staging Nandi-Client installables..."
+          
+          # Plugin manifests & metadata
+          cp -p AGY-Plugin/plugin.json "${CLIENT_DIR}/"
+          cp -p AGY-Plugin/hooks.json "${CLIENT_DIR}/"
+          cp -p AGY-Plugin/README.md "${CLIENT_DIR}/"
+
+          # Core components: bin, config, rules, skills, src
+          cp -rp AGY-Plugin/bin "${CLIENT_DIR}/"
+          cp -rp AGY-Plugin/config "${CLIENT_DIR}/"
+          cp -rp AGY-Plugin/rules "${CLIENT_DIR}/"
+          cp -rp AGY-Plugin/skills "${CLIENT_DIR}/"
+          cp -rp AGY-Plugin/src "${CLIENT_DIR}/"
+
+          # Runtime log directory
+          mkdir -p "${CLIENT_DIR}/logs"
+          touch "${CLIENT_DIR}/logs/.gitkeep"
+
+          # Clean exclusions: avoid tests, virtualenvs, runtime logs, bytecode caches
+          echo "Purging tests and unnecessary files from Nandi-Client..."
+          find "${CLIENT_DIR}" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+          find "${CLIENT_DIR}" -name "*.pyc" -delete 2>/dev/null || true
+          find "${CLIENT_DIR}" -name "*.pyo" -delete 2>/dev/null || true
+          find "${CLIENT_DIR}" -name "*.pyd" -delete 2>/dev/null || true
+          find "${CLIENT_DIR}" -name ".DS_Store" -delete 2>/dev/null || true
+          rm -rf "${CLIENT_DIR}/.venv" 2>/dev/null || true
+          rm -f "${CLIENT_DIR}/logs/*.log" 2>/dev/null || true
+
+          # Create standalone Quickstart Guide for client users
+          cat << 'SUBEOF' > "${CLIENT_DIR}/QUICKSTART.md"
+          # Nandi-Client (Antigravity Plugin) Quickstart
+
+          This package contains the ready-to-run installables for **Nandi**, the threshold guardian plugin for Google Antigravity.
+
+          ## Prerequisites
+          - Google Cloud SDK (`gcloud` CLI) installed and authenticated (`gcloud auth login`).
+          - Python 3.8+ on system PATH.
+          - Google Cloud Project with Model Armor configured (see `nandi-server` package).
+
+          ## Installation
+
+          Run the automated installer script:
+          ```bash
+          # 1. Global Installation (Recommended - installs to ~/.gemini/config/plugins/nandi):
+          ./bin/install-nandi.sh --project-id YOUR_GCP_PROJECT_ID
+
+          # 2. Or Project-Scoped Installation (isolated to a specific workspace directory):
+          ./bin/install-nandi.sh --project-id YOUR_GCP_PROJECT_ID --project-dir /path/to/my-project
+
+          # 3. Optional: Use host system python instead of isolated .venv:
+          ./bin/install-nandi.sh --project-id YOUR_GCP_PROJECT_ID --system
+          ```
+
+          ## Verify Installation
+          Check plugin status and active governance policies:
+          ```bash
+          python3 src/cli/grc_admin.py status
+          ```
+          SUBEOF
+
+          # Set executable permissions
+          chmod +x "${CLIENT_DIR}/bin/install-nandi.sh"
+          chmod +x "${CLIENT_DIR}/src/cli/grc_admin.py"
+          chmod +x "${CLIENT_DIR}/src/hooks/"*.py
+
+      - name: Archive Nandi-Client Packages
+        run: |
+          cd staging
+          tar -czf ../dist/nandi-client.tar.gz nandi-client
+          zip -rq ../dist/nandi-client.zip nandi-client
+          cd ..
+          echo "Nandi-Client packaged successfully:"
+          ls -lh dist/nandi-client.*
+
+      # ========================================================================
+      # 2. Package Nandi-Server (GCP Terraform & Model Armor Provisioning)
+      # ========================================================================
+      - name: Stage Nandi-Server Assets
+        run: |
+          SERVER_DIR="staging/nandi-server"
+
+          echo "Staging Nandi-Server templates & scripts..."
+
+          # Provisioning script
+          cp -rp GCP/bin "${SERVER_DIR}/"
+          chmod +x "${SERVER_DIR}/bin/setup-model-armor.sh"
+
+          # Terraform infrastructure module
+          cp -rp GCP/terraform "${SERVER_DIR}/"
+
+          # Model Armor templates and technical documentation
+          cp -p GCP/generated_model_armor_template.json "${SERVER_DIR}/"
+          cp -p GCP/MODEL_ARMOR_SETUP.md "${SERVER_DIR}/"
+          cp -p GCP/README.md "${SERVER_DIR}/"
+
+          # Clean exclusions: avoid terraform state, lock files, local vars, tests, caches
+          echo "Purging local state, tests, and temporary files from Nandi-Server..."
+          rm -rf "${SERVER_DIR}/terraform/.terraform" 2>/dev/null || true
+          rm -f "${SERVER_DIR}/terraform/.terraform.lock.hcl" 2>/dev/null || true
+          rm -f "${SERVER_DIR}/terraform"/*.tfstate* 2>/dev/null || true
+          rm -f "${SERVER_DIR}/terraform/terraform.tfvars" 2>/dev/null || true
+          find "${SERVER_DIR}" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+          find "${SERVER_DIR}" -name "*.pyc" -delete 2>/dev/null || true
+          find "${SERVER_DIR}" -name ".DS_Store" -delete 2>/dev/null || true
+
+          # Create standalone Quickstart Guide for server users
+          cat << 'SUBEOF' > "${SERVER_DIR}/QUICKSTART.md"
+          # Nandi-Server (Google Cloud Infrastructure) Quickstart
+
+          This package contains the automated provisioning scripts and Terraform templates to deploy Google Cloud Model Armor, Cloud DLP inspection, and 7-year regulatory audit log buckets for Indian FSI compliance.
+
+          ## Prerequisites
+          - Google Cloud SDK (`gcloud` CLI) authenticated with project owner/editor privileges:
+            ```bash
+            gcloud auth login
+            gcloud auth application-default login
+            ```
+          - A Google Cloud Project (e.g. in `asia-south1` Mumbai).
+
+          ## Deployment Options
+
+          ### Option A: Automated Provisioning Script (Quickest & Recommended)
+          Run the end-to-end setup script to enable APIs, configure IAM roles, deploy the Model Armor template, and run live verification:
+          ```bash
+          ./bin/setup-model-armor.sh --project-id YOUR_GCP_PROJECT_ID --region asia-south1
+          ```
+
+          ### Option B: Terraform Deployment
+          Deploy via standard Infrastructure-as-Code:
+          ```bash
+          cd terraform
+          cp terraform.tfvars.example terraform.tfvars
+          # Edit terraform.tfvars and specify your project_id, region, and admin identity
+          terraform init
+          terraform plan
+          terraform apply
+          ```
+
+          ### Option C: Direct REST API (cURL)
+          ```bash
+          ENDPOINT="modelarmor.asia-south1.rep.googleapis.com"
+          curl -X POST \
+            -H "Authorization: Bearer $(gcloud auth print-access-token)" \
+            -H "Content-Type: application/json; charset=utf-8" \
+            -H "X-Goog-User-Project: YOUR_GCP_PROJECT_ID" \
+            "https://${ENDPOINT}/v1/projects/YOUR_GCP_PROJECT_ID/locations/asia-south1/templates?templateId=fsi-india-compliance-template" \
+            -d @generated_model_armor_template.json
+          ```
+          SUBEOF
+
+      - name: Archive Nandi-Server Packages
+        run: |
+          cd staging
+          tar -czf ../dist/nandi-server.tar.gz nandi-server
+          zip -rq ../dist/nandi-server.zip nandi-server
+          cd ..
+          echo "Nandi-Server packaged successfully:"
+          ls -lh dist/nandi-server.*
+
+      # ========================================================================
+      # 3. Generate Cryptographic Checksums
+      # ========================================================================
+      - name: Compute Checksums
+        run: |
+          cd dist
+          sha256sum nandi-client.tar.gz nandi-client.zip nandi-server.tar.gz nandi-server.zip > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      # ========================================================================
+      # 4. Upload GitHub Actions Artifacts (Downloadable from Summary Tab)
+      # ========================================================================
+      - name: Upload Nandi-Client Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nandi-client
+          path: |
+            dist/nandi-client.tar.gz
+            dist/nandi-client.zip
+          retention-days: 90
+
+      - name: Upload Nandi-Server Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nandi-server
+          path: |
+            dist/nandi-server.tar.gz
+            dist/nandi-server.zip
+          retention-days: 90
+
+      - name: Upload All Release Assets Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nandi-release-all
+          path: dist/*
+          retention-days: 90
+
+      # ========================================================================
+      # 5. Publish Official GitHub Release (On Tags or Manual Dispatch)
+      # ========================================================================
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.vars.outputs.VERSION }}
+          name: Nandi Release ${{ steps.vars.outputs.VERSION }}
+          draft: ${{ inputs.draft || false }}
+          prerelease: ${{ inputs.prerelease || false }}
+          generate_release_notes: true
+          body: |
+            # Nandi Release ${{ steps.vars.outputs.VERSION }}
+
+            **The Incorruptible Threshold Guardian for Google Antigravity**
+
+            Download the respective package below based on your role:
+
+            ---
+
+            ### 📦 Nandi-Client (Antigravity Plugin)
+            *For Developers & Engineers working in Google Antigravity.*
+            Contains all installable components for the Nandi Antigravity Plugin with zero external dependencies.
+
+            * **Download:**
+              * `nandi-client.tar.gz`
+              * `nandi-client.zip`
+            * **Quick Install:**
+              ```bash
+              tar -xzf nandi-client.tar.gz
+              cd nandi-client
+              ./bin/install-nandi.sh --project-id YOUR_GCP_PROJECT_ID
+              ```
+
+            ---
+
+            ### 🛡️ Nandi-Server (GCP Infrastructure & Model Armor)
+            *For Cloud Architects, DevOps & SecOps Teams.*
+            Contains the Terraform templates, REST payloads, and automated provisioning scripts to configure Google Cloud Model Armor, Cloud DLP, 7-year regulatory audit buckets, and IAM roles.
+
+            * **Download:**
+              * `nandi-server.tar.gz`
+              * `nandi-server.zip`
+            * **Quick Deploy:**
+              ```bash
+              tar -xzf nandi-server.tar.gz
+              cd nandi-server
+              ./bin/setup-model-armor.sh --project-id YOUR_GCP_PROJECT_ID --region asia-south1
+              ```
+
+            ---
+
+            ### 🔒 Integrity Checksums (SHA-256)
+            Refer to the attached `SHA256SUMS.txt` to verify archive integrity.
+          files: |
+            dist/nandi-client.tar.gz
+            dist/nandi-client.zip
+            dist/nandi-server.tar.gz
+            dist/nandi-server.zip
+            dist/SHA256SUMS.txt

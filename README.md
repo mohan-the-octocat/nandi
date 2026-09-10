@@ -176,20 +176,20 @@ Run the installer script [`AGY-Plugin/bin/install-nandi.sh`](AGY-Plugin/bin/inst
 git clone https://github.com/mohan-the-octocat/nandi.git
 cd nandi
 
-# Standard Installation (Provisions hermetic, isolated virtual environment at AGY-Plugin/.venv)
-./AGY-Plugin/bin/install-nandi.sh
+# Standard Installation (Requires GCP Project ID; provisions isolated virtual environment at AGY-Plugin/.venv)
+./AGY-Plugin/bin/install-nandi.sh --project-id your-gcp-project-id
 ```
 
 #### Installer Options
 ```bash
-# Project-Scoped Installation (restricts hooks exclusively to a specific project repository):
-./AGY-Plugin/bin/install-nandi.sh --project-dir /path/to/your/project-workspace
+# Project-Scoped Installation (restricts hooks exclusively to a specific project workspace):
+./AGY-Plugin/bin/install-nandi.sh --project-id your-gcp-project-id --project-dir /path/to/your/project-workspace
 
 # System Python Override (uses host Python instead of isolated .venv):
-./AGY-Plugin/bin/install-nandi.sh --system
+./AGY-Plugin/bin/install-nandi.sh --project-id your-gcp-project-id --system
 
 # Clean Rebuild (forces re-creation of virtual environment):
-./AGY-Plugin/bin/install-nandi.sh --recreate-venv
+./AGY-Plugin/bin/install-nandi.sh --project-id your-gcp-project-id --recreate-venv
 ```
 
 #### What the installer executes:

@@ -28,7 +28,7 @@ pii_guard:
 model_armor:
   enabled: true
   action_on_match: "BLOCK" # BLOCK, FORCE_ASK, WARN
-  project_id: "stratosphere-461622"
+  project_id: "code-assist-enterprise-demo"
   location: "asia-south1" # asia-south1 (Mumbai, India) for domestic data residency
   template_id: "fsi-india-compliance-template"
   endpoint: "modelarmor.asia-south1.rep.googleapis.com" # Regional REP endpoint

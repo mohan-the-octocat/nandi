@@ -187,7 +187,56 @@ class TestModelArmor(unittest.TestCase):
         self.assertEqual(res["status_code"], 401)
         self.assertIn("Authentication failed", res["error_message"])
 
+    @patch.object(ModelArmorClient, "_get_auth_token", return_value="test-token")
+    @patch("urllib.request.urlopen")
+    def test_check_iam_permissions_success(self, mock_urlopen, mock_auth):
+        mock_response = MagicMock()
+        mock_response.status = 200
+        mock_response.read.return_value = json.dumps({
+            "permissions": [
+                "modelarmor.templates.useToSanitizeUserPrompt",
+                "modelarmor.templates.get"
+            ]
+        }).encode("utf-8")
+        mock_response.__enter__.return_value = mock_response
+        mock_urlopen.return_value = mock_response
+
+        res = self.client.check_iam_permissions()
+        self.assertTrue(res["success"])
+        self.assertTrue(res["has_sanitize_permission"])
+        self.assertTrue(res["has_view_permission"])
+        self.assertEqual(len(res["missing_permissions"]), 0)
+
+    @patch.object(ModelArmorClient, "_get_auth_token", return_value="test-token")
+    @patch("urllib.request.urlopen")
+    def test_check_iam_permissions_missing_sanitize(self, mock_urlopen, mock_auth):
+        mock_response = MagicMock()
+        mock_response.status = 200
+        mock_response.read.return_value = json.dumps({
+            "permissions": [
+                "modelarmor.templates.get"
+            ]
+        }).encode("utf-8")
+        mock_response.__enter__.return_value = mock_response
+        mock_urlopen.return_value = mock_response
+
+        res = self.client.check_iam_permissions()
+        self.assertFalse(res["success"])
+        self.assertFalse(res["has_sanitize_permission"])
+        self.assertTrue(res["has_view_permission"])
+        self.assertIn("modelarmor.templates.useToSanitizeUserPrompt", res["missing_permissions"])
+        self.assertIn("Missing prerequisite Model Armor permissions", res["error_message"])
+
+    def test_check_iam_permissions_no_auth(self):
+        client_no_auth = ModelArmorClient()
+        client_no_auth._get_auth_token = lambda: None
+        res = client_no_auth.check_iam_permissions()
+        self.assertFalse(res["success"])
+        self.assertEqual(res["status_code"], 401)
+        self.assertIn("Authentication failed", res["error_message"])
+
 
 if __name__ == "__main__":
     unittest.main()
+
 

@@ -5,9 +5,9 @@
 #
 # Execution Flow:
 #  1. Local Environment & Library Diagnostics (Hermetic .venv by default, Python 3.8+, core stdlib, gcloud CLI, local files)
-#  2. Google Cloud Authentication ('gcloud auth application-default login')
+#  2. Google Cloud Authentication & IAM Permissions Verification ('gcloud auth application-default login', testIamPermissions)
 #  3. Google Cloud Project & Model Armor Template Diagnostics (REP endpoint, template inspection, live prompt sanitization)
-#  4. Execute Unit Test Suite (31 tests)
+#  4. Execute Unit Test Suite (34 tests)
 #  5. Install Nandi plugin installables (Global or Project-Scoped)
 # ==============================================================================
 set -euo pipefail
@@ -20,6 +20,7 @@ GCP_ROOT="${REPO_ROOT}/GCP"
 GLOBAL_TARGET_DIR_1="${HOME}/.gemini/antigravity/plugins"
 GLOBAL_TARGET_DIR_2="${HOME}/.gemini/config/plugins"
 
+GCP_PROJECT_ID=""
 PROJECT_DIR=""
 USE_VENV=true
 RECREATE_VENV=false
@@ -29,30 +30,37 @@ RUN_TESTS=false
 
 print_usage() {
   cat <<EOF
-Usage: ./AGY-Plugin/bin/install-nandi.sh [OPTIONS]
+Usage: ./AGY-Plugin/bin/install-nandi.sh -p GCP_PROJECT_ID [OPTIONS]
 
-Options:
-  -p, --project-dir DIR    Install plugin scoped to a specific project alone (project-scoped)
-  --system                 Use host system python3 instead of isolated .venv (override default)
-  --recreate-venv          Recreate the isolated .venv environment from scratch
-  --skip-auth              Skip interactive 'gcloud auth application-default login' (e.g. if already configured)
-  --skip-validation        Skip live Model Armor API validation call
-  --run-tests              Run complete 31-test suite during installation (default: false)
-  -h, --help               Show this help message
+Installs the Nandi GRC Guard Plugin for Google Antigravity.
+
+Required Options:
+  -p, --project-id PROJECT_ID  Target GCP Project ID (REQUIRED; e.g. 'my-project-123456')
+
+Optional Configuration:
+  -d, --project-dir DIR        Install plugin scoped to a specific project workspace alone
+  --system                     Use host system python3 instead of isolated .venv (override default)
+  --recreate-venv              Recreate the isolated .venv environment from scratch
+  --skip-auth                  Skip interactive 'gcloud auth application-default login' (e.g. if already configured)
+  --skip-validation            Skip live Model Armor API and IAM role validation calls
+  --run-tests                  Run complete 34-test suite during installation (default: false)
+  -h, --help                   Show this help message
 
 Examples:
-  ./AGY-Plugin/bin/install-nandi.sh                 # Default: installs with hermetic .venv
-  ./AGY-Plugin/bin/install-nandi.sh --system        # Override: uses host system python3
-  ./AGY-Plugin/bin/install-nandi.sh --project-dir /path/to/my-project
-  ./AGY-Plugin/bin/install-nandi.sh -p .
-  ./AGY-Plugin/bin/install-nandi.sh --skip-auth
-  ./AGY-Plugin/bin/install-nandi.sh --run-tests
+  ./AGY-Plugin/bin/install-nandi.sh --project-id my-gcp-project-123456
+  ./AGY-Plugin/bin/install-nandi.sh -p my-gcp-project-123456 --project-dir /path/to/my-project
+  ./AGY-Plugin/bin/install-nandi.sh -p my-gcp-project-123456 --skip-auth
+  ./AGY-Plugin/bin/install-nandi.sh -p my-gcp-project-123456 --run-tests
 EOF
 }
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    -p|--project-dir)
+    -p|--project-id|--project|--gcp-project-id)
+      GCP_PROJECT_ID="$2"
+      shift 2
+      ;;
+    -d|--project-dir)
       mkdir -p "$2"
       PROJECT_DIR="$(cd "$2" && pwd)"
       shift 2
@@ -89,23 +97,33 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+# Validate mandatory GCP Project ID parameter
+if [[ -z "${GCP_PROJECT_ID}" ]]; then
+  echo "❌ Error: Missing mandatory option: -p, --project-id PROJECT_ID" >&2
+  echo "   A valid Google Cloud Project ID must be explicitly provided." >&2
+  echo "" >&2
+  print_usage >&2
+  exit 1
+fi
+
 echo "============================================================"
 echo " Nandi Installer (The Incorruptible Threshold Guardian)"
 echo "============================================================"
 echo "Repository Root Directory : ${REPO_ROOT}"
 echo "AGY-Plugin Directory      : ${PLUGIN_ROOT}"
 echo "GCP Server Infrastructure : ${GCP_ROOT}"
+echo "Target GCP Project ID     : ${GCP_PROJECT_ID}"
 if [[ "${USE_VENV}" == "true" ]]; then
-  echo "Python Runtime Mode  : Isolated Virtual Environment (${PLUGIN_ROOT}/.venv)"
+  echo "Python Runtime Mode       : Isolated Virtual Environment (${PLUGIN_ROOT}/.venv)"
 else
-  echo "Python Runtime Mode  : Host System Python3 (--system override)"
+  echo "Python Runtime Mode       : Host System Python3 (--system override)"
 fi
 if [[ -n "${PROJECT_DIR}" ]]; then
   TARGET_PLUGINS_DIR="${PROJECT_DIR}/_agents/plugins"
   DOT_TARGET_PLUGINS_DIR="${PROJECT_DIR}/.agents/plugins"
-  echo "Installation Target  : Project Scoped (${PROJECT_DIR})"
+  echo "Installation Target       : Project Scoped (${PROJECT_DIR})"
 else
-  echo "Installation Target  : Global (${GLOBAL_TARGET_DIR_2}/nandi)"
+  echo "Installation Target       : Global (${GLOBAL_TARGET_DIR_2}/nandi)"
 fi
 echo "============================================================"
 
@@ -289,6 +307,169 @@ if [[ -z "${GOOGLE_OAUTH_ACCESS_TOKEN:-}" && -z "${GCP_ACCESS_TOKEN:-}" ]]; then
   fi
 fi
 
+# 2.1 Validate target GCP Project ID (strictly require project ID, not project name)
+if ! gcloud projects describe "${GCP_PROJECT_ID}" &>/dev/null; then
+  echo "❌ Error: Project ID '${GCP_PROJECT_ID}' was not found or permission denied." >&2
+  MATCHING_ID="$(gcloud projects list --filter="name='${GCP_PROJECT_ID}'" --format="value(projectId)" 2>/dev/null | head -n 1 || true)"
+  if [[ -n "${MATCHING_ID}" ]]; then
+    echo "   '${GCP_PROJECT_ID}' is a GCP Project Display Name, not a Project ID." >&2
+    echo "   Please specify the Project ID instead: --project-id ${MATCHING_ID}" >&2
+  else
+    echo "   Please provide a valid GCP Project ID (run 'gcloud projects list' to find your project ID)." >&2
+  fi
+  exit 1
+fi
+echo "  ✓ Target GCP Project ID verified: ${GCP_PROJECT_ID}"
+
+# Export for Python runtime and update config/config.yaml
+export MODEL_ARMOR_PROJECT_ID="${GCP_PROJECT_ID}"
+
+"${PYTHON_EXEC}" - "${PLUGIN_ROOT}/config/config.yaml" "${GCP_PROJECT_ID}" <<'PY'
+import re, sys
+cfg_path, project_id = sys.argv[1], sys.argv[2]
+with open(cfg_path, "r", encoding="utf-8") as f:
+    content = f.read()
+new_content = re.sub(r'(project_id:\s*)["\'][^"\']+["\']', rf'\g<1>"{project_id}"', content)
+with open(cfg_path, "w", encoding="utf-8") as f:
+    f.write(new_content)
+PY
+echo "  ✓ Configured Model Armor project_id in config/config.yaml"
+
+# 2.2 Google Cloud IAM Role & Effective Permissions Validation
+echo ""
+echo "[Step 2.2] Validating GCP IAM Roles & Effective Permissions on Project '${GCP_PROJECT_ID}'..."
+
+if [[ "${SKIP_VALIDATION}" == "true" ]]; then
+  echo "  ✓ Skipping IAM role & permission validation (--skip-validation specified)."
+else
+  "${PYTHON_EXEC}" - "${PLUGIN_ROOT}" "${GCP_PROJECT_ID}" <<'PY'
+import json
+import os
+import subprocess
+import sys
+
+plugin_root = sys.argv[1]
+project_id = sys.argv[2]
+if plugin_root not in sys.path:
+    sys.path.insert(0, plugin_root)
+
+from src.model_armor.client import ModelArmorClient
+
+client = ModelArmorClient(project_id=project_id)
+
+# Identify active authenticated account
+account = os.popen("gcloud config get-value account 2>/dev/null").read().strip()
+if not account:
+    token_account = os.popen("gcloud auth list --filter=status:ACTIVE --format='value(account)' 2>/dev/null").read().strip()
+    account = token_account or "current-user"
+
+member_prefix = "serviceAccount" if "gserviceaccount.com" in account else "user"
+member_id = f"{member_prefix}:{account}"
+
+print(f"  Authenticated Identity : {member_id}")
+print(f"  Target GCP Project ID  : {project_id}")
+print(f"  Evaluating effective IAM permissions via Google Cloud Resource Manager...")
+
+# 1. Authoritative check of effective permissions via testIamPermissions
+iam_result = client.check_iam_permissions(project_id=project_id)
+
+granted = iam_result.get("granted_permissions", [])
+missing = iam_result.get("missing_permissions", [])
+
+if "modelarmor.templates.useToSanitizeUserPrompt" in granted:
+    print(f"  ✓ Permission: modelarmor.templates.useToSanitizeUserPrompt (Granted)")
+else:
+    print(f"  ❌ Permission: modelarmor.templates.useToSanitizeUserPrompt (Missing / Denied)")
+
+if "modelarmor.templates.get" in granted:
+    print(f"  ✓ Permission: modelarmor.templates.get (Granted)")
+else:
+    print(f"  ❌ Permission: modelarmor.templates.get (Missing / Denied)")
+
+# 2. Correlate with project IAM policy bindings (direct user roles & group roles)
+direct_roles = []
+group_roles = []
+try:
+    policy_res = subprocess.run(
+        ["gcloud", "projects", "get-iam-policy", project_id, "--format=json"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if policy_res.returncode == 0:
+        policy = json.loads(policy_res.stdout)
+        for binding in policy.get("bindings", []):
+            role = binding.get("role", "")
+            members = binding.get("members", [])
+            if member_id in members:
+                direct_roles.append(role)
+            for m in members:
+                if m.startswith("group:") and any(k in role.lower() for k in ["modelarmor", "owner", "editor"]):
+                    group_roles.append((m, role))
+except Exception:
+    pass
+
+if direct_roles:
+    print(f"  Direct IAM Role Bindings on Project:")
+    for r in direct_roles:
+        print(f"    • {r}")
+
+if group_roles:
+    print(f"  Model Armor Roles Assigned to Groups on Project:")
+    for grp, r in group_roles:
+        print(f"    • {grp} -> {r}")
+
+# 3. Fail closed if any requisite permission is missing
+if not iam_result.get("success"):
+    print("\n" + "=" * 60)
+    print("❌ GCP IAM PERMISSION VALIDATION FAILED")
+    print("=" * 60)
+    print(f"The active identity '{member_id}' (or the groups it belongs to) does NOT")
+    print(f"have the prerequisite IAM roles/permissions on project '{project_id}'.")
+    print(f"\nMissing Requisite Permissions:")
+    for p in missing:
+        if p == "modelarmor.templates.useToSanitizeUserPrompt":
+            print(f"  • {p}")
+            print(f"    -> Required to invoke Model Armor sanitization gates (PreInvocation & PreToolUse).")
+        elif p == "modelarmor.templates.get":
+            print(f"  • {p}")
+            print(f"    -> Required to inspect Model Armor template configuration & security thresholds.")
+        else:
+            print(f"  • {p}")
+
+    print("\nPrerequisite GCP Roles:")
+    print("  1. roles/modelarmor.user   (Grants modelarmor.templates.useToSanitizeUserPrompt)")
+    print("  2. roles/modelarmor.viewer (Grants modelarmor.templates.get)")
+    print("  (Alternatively: roles/modelarmor.admin, roles/editor, or roles/owner)")
+    print("\n  ⚠️ NOTE: 'Gemini Enterprise User' (roles/discoveryengine.agentspaceUser) DOES NOT")
+    print("  grant Model Armor permissions. Model Armor access must be explicitly granted.")
+
+    print("\nRemediation:")
+    print(f"Ask your GCP Project Administrator to grant you (or a Google Group you belong to)")
+    print(f"the requisite roles on project '{project_id}':")
+    print("\nOption A (Recommended for Individual Users):")
+    print(f"  gcloud projects add-iam-policy-binding {project_id} \\")
+    print(f"    --member=\"{member_id}\" \\")
+    print(f"    --role=\"roles/modelarmor.user\"")
+    print(f"  gcloud projects add-iam-policy-binding {project_id} \\")
+    print(f"    --member=\"{member_id}\" \\")
+    print(f"    --role=\"roles/modelarmor.viewer\"")
+
+    print("\nOption B (Recommended for Enterprise Teams via Google Groups):")
+    print(f"  gcloud projects add-iam-policy-binding {project_id} \\")
+    print(f"    --member=\"group:YOUR_TEAM_GROUP@YOUR_DOMAIN.COM\" \\")
+    print(f"    --role=\"roles/modelarmor.user\"")
+    print(f"  gcloud projects add-iam-policy-binding {project_id} \\")
+    print(f"    --member=\"group:YOUR_TEAM_GROUP@YOUR_DOMAIN.COM\" \\")
+    print(f"    --role=\"roles/modelarmor.viewer\"")
+    print("=" * 60)
+    print("Installation aborted due to missing IAM prerequisites.")
+    sys.exit(1)
+
+print("  ✓ IAM prerequisite roles and effective permissions successfully verified for user/groups.")
+PY
+fi
+
 # ------------------------------------------------------------------------------
 # 3. Google Cloud Project & Model Armor Template Diagnostics
 # ------------------------------------------------------------------------------
@@ -392,7 +573,11 @@ if "updateTime" in template_data:
 # Inspect and display configured safety filters
 filter_cfg = template_data.get("filterConfig", template_data.get("filter_config", {}))
 
-pi_cfg = filter_cfg.get("piAndJailbreakFilterConfig") or filter_cfg.get("pi_and_jailbreak_filter_settings")
+pi_cfg = (
+    filter_cfg.get("piAndJailbreakFilterSettings")
+    or filter_cfg.get("pi_and_jailbreak_filter_settings")
+    or filter_cfg.get("piAndJailbreakFilterConfig")
+)
 if pi_cfg:
     enforcement = pi_cfg.get("filterEnforcement") or pi_cfg.get("filter_enforcement", "ENABLED")
     conf = pi_cfg.get("confidenceLevel") or pi_cfg.get("confidence_level", "DEFAULT")
@@ -400,20 +585,32 @@ if pi_cfg:
 else:
     print(f"    ℹ Prompt Injection & Jailbreak Filter: (Not configured in template)")
 
-rai_cfg = filter_cfg.get("raiFilterConfig") or filter_cfg.get("rai_settings")
+rai_cfg = (
+    filter_cfg.get("raiSettings")
+    or filter_cfg.get("rai_settings")
+    or filter_cfg.get("raiFilterConfig")
+)
 if rai_cfg:
     print(f"    ✓ Responsible AI (RAI) Content Filters: ACTIVE")
 else:
     print(f"    ℹ Responsible AI (RAI) Content Filters: (Not configured in template)")
 
-uri_cfg = filter_cfg.get("maliciousUriFilterConfig") or filter_cfg.get("malicious_uri_settings")
+uri_cfg = (
+    filter_cfg.get("maliciousUriFilterSettings")
+    or filter_cfg.get("malicious_uri_settings")
+    or filter_cfg.get("maliciousUriFilterConfig")
+)
 if uri_cfg:
     print(f"    ✓ Malicious URI Filter: ACTIVE")
 else:
     print(f"    ℹ Malicious URI Filter: (Not configured or not supported in this region)")
 
 tmpl_meta = template_data.get("templateMetadata", template_data.get("template_metadata", {}))
-multi_lang = filter_cfg.get("multiLanguageConfig") or tmpl_meta.get("multi_language_config")
+multi_lang = (
+    filter_cfg.get("multiLanguageConfig")
+    or tmpl_meta.get("multiLanguageDetection")
+    or tmpl_meta.get("multi_language_detection")
+)
 if multi_lang:
     print(f"    ✓ Multi-Language Detection: ENABLED")
 

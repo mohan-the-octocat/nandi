@@ -69,7 +69,27 @@ class ModelArmorClient:
         timeout_seconds: float = 5.0,
         retry_attempts: int = 2,
     ):
-        self.project_id = os.environ.get("MODEL_ARMOR_PROJECT_ID", project_id)
+        # Resolve project_id: environment variable > config.yaml > parameter default
+        env_pid = os.environ.get("MODEL_ARMOR_PROJECT_ID")
+        if env_pid:
+            self.project_id = env_pid
+        else:
+            cfg_pid = None
+            try:
+                cfg_file = os.path.join(
+                    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+                    "config",
+                    "config.yaml"
+                )
+                if os.path.exists(cfg_file):
+                    import re
+                    with open(cfg_file, "r", encoding="utf-8") as f:
+                        m = re.search(r'project_id:\s*["\']([^"\']+)["\']', f.read())
+                        if m:
+                            cfg_pid = m.group(1)
+            except Exception:
+                pass
+            self.project_id = cfg_pid or project_id
         self.location = os.environ.get("MODEL_ARMOR_LOCATION", location)
         self.template_id = os.environ.get("MODEL_ARMOR_TEMPLATE_ID", template_id)
         self.endpoint = endpoint or os.environ.get("MODEL_ARMOR_ENDPOINT")
@@ -315,4 +335,101 @@ class ModelArmorClient:
             "error_message": f"Failed to retrieve template: {last_error}",
             "resource_name": template_resource_name,
         }
+
+    def check_iam_permissions(
+        self,
+        project_id: Optional[str] = None,
+        required_permissions: Optional[list] = None,
+    ) -> Dict[str, Any]:
+        """Validates whether the authenticated identity has requisite Model Armor IAM permissions.
+
+        Evaluates effective permissions across direct user grants, Google Groups memberships,
+        and resource hierarchy inheritance using Cloud Resource Manager testIamPermissions.
+
+        Default required permissions:
+          - modelarmor.templates.useToSanitizeUserPrompt (from roles/modelarmor.user, admin, editor, owner)
+          - modelarmor.templates.get (from roles/modelarmor.viewer, admin, editor, owner)
+        """
+        proj = project_id or self.project_id
+        req_perms = required_permissions or [
+            "modelarmor.templates.useToSanitizeUserPrompt",
+            "modelarmor.templates.get",
+        ]
+
+        auth_token = self._get_auth_token()
+        if not auth_token:
+            return {
+                "success": False,
+                "project_id": proj,
+                "status_code": 401,
+                "granted_permissions": [],
+                "missing_permissions": req_perms,
+                "has_sanitize_permission": False,
+                "has_view_permission": False,
+                "error_message": "Authentication failed: Unable to obtain GCP OAuth2 access token for IAM validation.",
+            }
+
+        url = f"https://cloudresourcemanager.googleapis.com/v1/projects/{proj}:testIamPermissions"
+        payload = json.dumps({"permissions": req_perms}).encode("utf-8")
+        headers = {
+            "Content-Type": "application/json; charset=utf-8",
+            "Authorization": f"Bearer {auth_token}",
+        }
+
+        last_error = None
+        for attempt in range(self.retry_attempts + 1):
+            try:
+                http_req = urllib.request.Request(url, data=payload, headers=headers, method="POST")
+                with urllib.request.urlopen(http_req, timeout=self.timeout_seconds) as resp:
+                    resp_body = resp.read().decode("utf-8")
+                    data = json.loads(resp_body)
+                    granted = data.get("permissions", [])
+                    missing = [p for p in req_perms if p not in granted]
+                    has_sanitize = "modelarmor.templates.useToSanitizeUserPrompt" in granted
+                    has_view = "modelarmor.templates.get" in granted
+
+                    is_success = len(missing) == 0
+                    err_msg = None
+                    if not is_success:
+                        err_msg = f"Missing prerequisite Model Armor permissions on project '{proj}': {', '.join(missing)}"
+
+                    return {
+                        "success": is_success,
+                        "project_id": proj,
+                        "status_code": resp.status,
+                        "granted_permissions": granted,
+                        "missing_permissions": missing,
+                        "has_sanitize_permission": has_sanitize,
+                        "has_view_permission": has_view,
+                        "error_message": err_msg,
+                    }
+            except urllib.error.HTTPError as e:
+                err_content = e.read().decode("utf-8", errors="ignore")
+                last_error = f"HTTP {e.code}: {e.reason} - {err_content}"
+                return {
+                    "success": False,
+                    "project_id": proj,
+                    "status_code": e.code,
+                    "granted_permissions": [],
+                    "missing_permissions": req_perms,
+                    "has_sanitize_permission": False,
+                    "has_view_permission": False,
+                    "error_message": last_error,
+                }
+            except Exception as e:
+                last_error = str(e)
+
+            time.sleep(0.1 * (2 ** attempt))
+
+        return {
+            "success": False,
+            "project_id": proj,
+            "status_code": 0,
+            "granted_permissions": [],
+            "missing_permissions": req_perms,
+            "has_sanitize_permission": False,
+            "has_view_permission": False,
+            "error_message": f"Failed to test IAM permissions: {last_error}",
+        }
+
 

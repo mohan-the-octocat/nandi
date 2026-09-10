@@ -74,13 +74,13 @@ The client plugin is installed and managed via the installer script:
 
 ```bash
 # Default: Installs with hermetic isolated virtual environment (.venv)
-./AGY-Plugin/bin/install-nandi.sh
+./AGY-Plugin/bin/install-nandi.sh --project-id your-gcp-project-id
 
-# Project-scoped installation (isolated to a single project):
-./AGY-Plugin/bin/install-nandi.sh -p /path/to/my-project
+# Project-scoped installation (isolated to a single project workspace):
+./AGY-Plugin/bin/install-nandi.sh --project-id your-gcp-project-id --project-dir /path/to/my-project
 
 # System Python override:
-./AGY-Plugin/bin/install-nandi.sh --system
+./AGY-Plugin/bin/install-nandi.sh --project-id your-gcp-project-id --system
 ```
 
 When installed, only this `AGY-Plugin/` directory is symlinked into Antigravity (`~/.gemini/config/plugins/nandi` or `<project>/_agents/plugins/nandi`). Server-side GCP infrastructure templates (`GCP/`) remain external and uninstalled.
