@@ -151,14 +151,7 @@ jobs:
           # Terraform infrastructure module
           cp -rp GCP/terraform "${SERVER_DIR}/"
 
-          # Model Armor template JSON (use repository template or generate default)
-          if [ -f "GCP/generated_model_armor_template.json" ]; then
-            cp -p GCP/generated_model_armor_template.json "${SERVER_DIR}/"
-          else
-            cat << 'JSONEOF' > "${SERVER_DIR}/generated_model_armor_template.json"
-{"filter_config":{"pi_and_jailbreak_filter_settings":{"confidence_level":"LOW_AND_ABOVE","filter_enforcement":"ENABLED"},"rai_settings":{"rai_filters":[{"confidence_level":"MEDIUM_AND_ABOVE","filter_type":"HATE_SPEECH"},{"confidence_level":"MEDIUM_AND_ABOVE","filter_type":"HARASSMENT"},{"confidence_level":"LOW_AND_ABOVE","filter_type":"SEXUALLY_EXPLICIT"},{"confidence_level":"LOW_AND_ABOVE","filter_type":"DANGEROUS"}]}},"template_metadata":{"custom_prompt_safety_error_message":"Prompt blocked by FSI Model Armor security policy."}}
-JSONEOF
-          fi
+          # Technical documentation and guides
           cp -p GCP/MODEL_ARMOR_SETUP.md "${SERVER_DIR}/"
           cp -p GCP/README.md "${SERVER_DIR}/"
 
@@ -168,6 +161,8 @@ JSONEOF
           rm -f "${SERVER_DIR}/terraform/.terraform.lock.hcl" 2>/dev/null || true
           rm -f "${SERVER_DIR}/terraform"/*.tfstate* 2>/dev/null || true
           rm -f "${SERVER_DIR}/terraform/terraform.tfvars" 2>/dev/null || true
+          rm -f "${SERVER_DIR}/terraform/generated_model_armor_template.json" 2>/dev/null || true
+          rm -f "${SERVER_DIR}/generated_model_armor_template.json" 2>/dev/null || true
           find "${SERVER_DIR}" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
           find "${SERVER_DIR}" -name "*.pyc" -delete 2>/dev/null || true
           find "${SERVER_DIR}" -name ".DS_Store" -delete 2>/dev/null || true
@@ -195,7 +190,7 @@ JSONEOF
           ```
 
           ### Option B: Terraform Deployment
-          Deploy via standard Infrastructure-as-Code:
+          Deploy via standard Infrastructure-as-Code (automatically generates template JSON at apply time):
           ```bash
           cd terraform
           cp terraform.tfvars.example terraform.tfvars
@@ -206,15 +201,7 @@ JSONEOF
           ```
 
           ### Option C: Direct REST API (cURL)
-          ```bash
-          ENDPOINT="modelarmor.asia-south1.rep.googleapis.com"
-          curl -X POST \
-            -H "Authorization: Bearer $(gcloud auth print-access-token)" \
-            -H "Content-Type: application/json; charset=utf-8" \
-            -H "X-Goog-User-Project: YOUR_GCP_PROJECT_ID" \
-            "https://${ENDPOINT}/v1/projects/YOUR_GCP_PROJECT_ID/locations/asia-south1/templates?templateId=fsi-india-compliance-template" \
-            -d @generated_model_armor_template.json
-          ```
+          Refer to `MODEL_ARMOR_SETUP.md` for REST API endpoint specifications and payload schemas.
           SUBEOF
 
       - name: Archive Nandi-Server Packages
