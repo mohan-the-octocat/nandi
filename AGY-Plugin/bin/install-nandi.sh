@@ -757,6 +757,123 @@ else
   echo "✓ Symlinked plugin globally to: ${GLOBAL_TARGET_DIR_2}/nandi"
 fi
 
+# 5.1 Grant read permissions for Nandi rules in config.json (userSettings.globalPermissionGrants)
+CONFIG_JSON_FILE="${HOME}/.gemini/config/config.json"
+echo ""
+echo "Configuring rule permissions in ${CONFIG_JSON_FILE}..."
+
+"${PYTHON_EXEC}" - "${CONFIG_JSON_FILE}" "${PLUGIN_ROOT}" "${PROJECT_DIR:-}" "${GLOBAL_TARGET_DIR_2}/nandi" "${GLOBAL_TARGET_DIR_1}/nandi" <<'PY'
+import glob
+import json
+import os
+import sys
+
+config_path = sys.argv[1]
+plugin_root = sys.argv[2]
+project_dir = sys.argv[3] if len(sys.argv) > 3 and sys.argv[3] else None
+global_target_2 = sys.argv[4] if len(sys.argv) > 4 and sys.argv[4] else None
+global_target_1 = sys.argv[5] if len(sys.argv) > 5 and sys.argv[5] else None
+
+rules_dir = os.path.join(plugin_root, "rules")
+if not os.path.isdir(rules_dir):
+    print(f"  ℹ Rules directory not found at {rules_dir}, skipping rules permissions.")
+    sys.exit(0)
+
+# Discover all .md rule files in the rules directory
+md_files = []
+for root, _, files in os.walk(rules_dir):
+    for f in sorted(files):
+        if f.endswith(".md"):
+            md_files.append(os.path.join(root, f))
+
+if not md_files:
+    print(f"  ℹ No markdown rule files found in {rules_dir}.")
+    sys.exit(0)
+
+# Determine all paths to grant read permissions for
+target_paths = set()
+for file_path in md_files:
+    rel_path = os.path.relpath(file_path, plugin_root)
+    # 1. Source canonical and absolute paths
+    target_paths.add(os.path.abspath(file_path))
+    target_paths.add(os.path.realpath(file_path))
+
+    # 2. Global symlink target paths
+    if global_target_2:
+        target_paths.add(os.path.join(global_target_2, rel_path))
+    if global_target_1:
+        target_paths.add(os.path.join(global_target_1, rel_path))
+
+    # 3. Project-scoped paths if installed in a project workspace
+    if project_dir:
+        target_paths.add(os.path.join(project_dir, "_agents", "plugins", "nandi", rel_path))
+        target_paths.add(os.path.join(project_dir, ".agents", "plugins", "nandi", rel_path))
+        target_paths.add(os.path.join(project_dir, ".antigravity", "plugins", "nandi", rel_path))
+
+# Also grant permission to the rules directories
+target_paths.add(os.path.abspath(rules_dir))
+target_paths.add(os.path.realpath(rules_dir))
+if global_target_2:
+    target_paths.add(os.path.join(global_target_2, "rules"))
+if project_dir:
+    target_paths.add(os.path.join(project_dir, "_agents", "plugins", "nandi", "rules"))
+
+grants_to_add = [f"read_file({p})" for p in sorted(target_paths)]
+
+def update_config_permissions(target_config_path):
+    os.makedirs(os.path.dirname(os.path.abspath(target_config_path)), exist_ok=True)
+    config_data = {}
+    if os.path.exists(target_config_path):
+        try:
+            with open(target_config_path, "r", encoding="utf-8") as f:
+                config_data = json.load(f)
+        except Exception as e:
+            print(f"  ⚠️ Warning: Failed to parse existing {target_config_path}: {e}", file=sys.stderr)
+            config_data = {}
+
+    if not isinstance(config_data, dict):
+        config_data = {}
+
+    user_settings = config_data.setdefault("userSettings", {})
+    if not isinstance(user_settings, dict):
+        user_settings = {}
+        config_data["userSettings"] = user_settings
+
+    perm_grants = user_settings.setdefault("globalPermissionGrants", {})
+    if not isinstance(perm_grants, dict):
+        perm_grants = {}
+        user_settings["globalPermissionGrants"] = perm_grants
+
+    allow_list = perm_grants.setdefault("allow", [])
+    if not isinstance(allow_list, list):
+        allow_list = []
+        perm_grants["allow"] = allow_list
+
+    existing_grants = set(allow_list)
+    added = 0
+    for grant in grants_to_add:
+        if grant not in existing_grants:
+            allow_list.append(grant)
+            existing_grants.add(grant)
+            added += 1
+
+    with open(target_config_path, "w", encoding="utf-8") as f:
+        json.dump(config_data, f, indent=2)
+        f.write("\n")
+    return added
+
+added_count = update_config_permissions(config_path)
+print(f"  ✓ Configured rule read permissions in {config_path} ({added_count} new grant(s) added)")
+for f in md_files:
+    print(f"    • {os.path.basename(f)}")
+
+if project_dir:
+    proj_cfg = os.path.join(project_dir, "_agents", "config.json")
+    if os.path.exists(os.path.dirname(proj_cfg)):
+        proj_added = update_config_permissions(proj_cfg)
+        print(f"  ✓ Configured rule read permissions in project config: {proj_cfg} ({proj_added} new grant(s) added)")
+PY
+
 echo ""
 echo "============================================================"
 if [[ -n "${PROJECT_DIR}" ]]; then
