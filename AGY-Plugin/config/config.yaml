@@ -1,7 +1,9 @@
 # Nandi - Master Configuration File
 # Designed for Indian Financial Services Institutions under RBI & SEBI Governance
 
-version: "1.0.0"
+plugin_name: "nandi"
+version: "1.0.1"
+description: "Enterprise GRC & Security Guard Plugin for Antigravity"
 environment: "production" # development, staging, production
 
 # Global Enforcement Mode:

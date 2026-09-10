@@ -1,7 +1,7 @@
 # Nandi
 
 [![Plugin: Nandi](https://img.shields.io/badge/Plugin-Nandi-purple)](AGY-Plugin/plugin.json)
-[![Release: v1.0.0](https://img.shields.io/badge/Release-v1.0.0-blue)](https://github.com/mohan-the-octocat/nandi/releases)
+[![Release: v1.0.1](https://img.shields.io/badge/Release-v1.0.1-blue)](https://github.com/mohan-the-octocat/nandi/releases)
 [![Compliance: RBI IT Governance 2023](https://img.shields.io/badge/Compliance-RBI%20IT%20Governance%202023-blue)](docs/RBI_COMPLIANCE.md)
 [![Compliance: SEBI CSCRF 2024](https://img.shields.io/badge/Compliance-SEBI%20CSCRF%202024-green)](docs/SEBI_COMPLIANCE.md)
 [![Compliance: DPDP Act 2023](https://img.shields.io/badge/Compliance-DPDP%20Act%202023-orange)](docs/RBI_COMPLIANCE.md)
