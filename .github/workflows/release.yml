@@ -93,7 +93,7 @@ jobs:
           cat << 'SUBEOF' > "${CLIENT_DIR}/QUICKSTART.md"
           # Nandi-Client (Antigravity Plugin) Quickstart
 
-          This package contains the ready-to-run installables for **Nandi**, the threshold guardian plugin for Google Antigravity.
+          This package contains the ready-to-run installables for **Nandi**, the enterprise GRC & security guard plugin for Google Antigravity.
 
           ## Prerequisites
           - Google Cloud SDK (`gcloud` CLI) installed and authenticated (`gcloud auth login`).
@@ -267,7 +267,7 @@ jobs:
           body: |
             # Nandi Release ${{ steps.vars.outputs.VERSION }}
 
-            **The Incorruptible Threshold Guardian for Google Antigravity**
+            **Enterprise Governance, Risk, and Compliance (GRC) & Security Guard for Google Antigravity**
 
             Download the respective package below based on your role:
 

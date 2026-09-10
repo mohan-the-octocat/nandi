@@ -1,6 +1,6 @@
 # Nandi - Google Cloud Server Infrastructure
 
-This directory contains all server-side Google Cloud Platform (GCP) infrastructure and configuration templates for **Nandi (The Incorruptible Threshold Guardian)**. 
+This directory contains all server-side Google Cloud Platform (GCP) infrastructure and configuration templates for **Nandi**. 
 
 These components are decoupled from the client developer plugin and are deployed centrally by cloud/DevSecOps teams to enforce Indian Financial Services Institution (FSI) compliance across all AI/developer workloads.
 

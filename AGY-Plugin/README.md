@@ -1,6 +1,6 @@
 # Nandi - Antigravity Plugin (AGY-Plugin)
 
-This directory contains the **Nandi (The Incorruptible Threshold Guardian)** plugin componentry for Google Antigravity.
+This directory contains the **Nandi** plugin componentry for Google Antigravity.
 
 Nandi operates directly within the developer's Antigravity IDE environment, inspecting prompts and tool executions in real-time through lifecycle hooks to enforce strict Indian Financial Services Institution (FSI) compliance and AI guardrails.
 

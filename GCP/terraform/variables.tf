@@ -1,7 +1,7 @@
 variable "project_id" {
   type        = string
   description = "The Google Cloud Project ID where Model Armor and compliance infrastructure will be provisioned."
-  default     = "stratosphere-461622"
+  default     = "your-gcp-project-id"
 }
 
 variable "region" {

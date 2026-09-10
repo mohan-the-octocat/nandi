@@ -2,7 +2,7 @@
 
 ## 1. Overview
 
-**Nandi** (*The Incorruptible Threshold Guardian*) automatically activates when installed in your Antigravity environment. It inspects all user prompts before they reach the model (`PreInvocation`), and inspects all tool executions (`PreToolUse`), guaranteeing strict compliance with Indian financial regulations.
+**Nandi** automatically activates when installed in your Antigravity environment. It inspects all user prompts before they reach the model (`PreInvocation`), and inspects all tool executions (`PreToolUse`), guaranteeing strict compliance with Indian financial regulations.
 
 ---
 

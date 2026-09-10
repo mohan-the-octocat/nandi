@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # Nandi Installer
-# The Incorruptible Threshold Guardian for Google Antigravity.
+# Enterprise GRC & Security Guard Plugin for Google Antigravity.
 #
 # Execution Flow:
 #  1. Local Environment & Library Diagnostics (Hermetic .venv by default, Python 3.8+, core stdlib, gcloud CLI, local files)
@@ -107,7 +107,7 @@ if [[ -z "${GCP_PROJECT_ID}" ]]; then
 fi
 
 echo "============================================================"
-echo " Nandi Installer (The Incorruptible Threshold Guardian)"
+echo " Nandi Installer"
 echo "============================================================"
 echo "Repository Root Directory : ${REPO_ROOT}"
 echo "AGY-Plugin Directory      : ${PLUGIN_ROOT}"
@@ -643,9 +643,13 @@ chmod +x "${PLUGIN_ROOT}"/src/hooks/*.py "${PLUGIN_ROOT}/src/cli/grc_admin.py" "
 echo "✓ Made hook entrypoints and CLI executable"
 
 if [[ "${RUN_TESTS}" == "true" ]]; then
-  echo "  Running complete unit test suite (--run-tests specified)..."
-  "${PYTHON_EXEC}" "${REPO_ROOT}/tests/run_all_tests.py"
-  echo "✓ All 31 unit tests passed successfully"
+  if [[ -f "${REPO_ROOT}/tests/run_all_tests.py" ]]; then
+    echo "  Running complete unit test suite (--run-tests specified)..."
+    "${PYTHON_EXEC}" "${REPO_ROOT}/tests/run_all_tests.py"
+    echo "✓ All 34 unit tests passed successfully"
+  else
+    echo "ℹ Note: Unit tests are not included in the release distribution (available in the source repository)."
+  fi
 else
   echo "✓ Model Armor connectivity verified in Step 3; full test suite skipped during installation."
 fi

@@ -3,7 +3,7 @@
 # ==============================================================================
 
 # Customer GCP Project ID
-project_id = "stratosphere-461622"
+project_id = "your-gcp-project-id"
 
 # India Region for Domestic Data Localization (RBI/SEBI Mandate)
 # Options: "asia-south1" (Mumbai) or "asia-south2" (Delhi)

@@ -131,7 +131,7 @@ class TestModelArmor(unittest.TestCase):
         mock_response = MagicMock()
         mock_response.status = 200
         template_payload = {
-            "name": "projects/stratosphere-461622/locations/asia-south1/templates/fsi-india-compliance-template",
+            "name": "projects/test-fsi-project/locations/asia-south1/templates/fsi-india-compliance-template",
             "filterConfig": {
                 "piAndJailbreakFilterConfig": {"filterEnforcement": "ENFORCE", "confidenceLevel": "LOW_AND_ABOVE"},
                 "raiFilterConfig": {

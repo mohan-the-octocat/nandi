@@ -62,7 +62,7 @@ class ModelArmorClient:
 
     def __init__(
         self,
-        project_id: str = "stratosphere-461622",
+        project_id: str = "your-gcp-project-id",
         location: str = "asia-south1",
         template_id: str = "fsi-india-compliance-template",
         endpoint: Optional[str] = None,
