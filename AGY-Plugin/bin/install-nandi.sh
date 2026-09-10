@@ -757,10 +757,10 @@ else
   echo "✓ Symlinked plugin globally to: ${GLOBAL_TARGET_DIR_2}/nandi"
 fi
 
-# 5.1 Grant read permissions for Nandi rules in config.json (userSettings.globalPermissionGrants)
+# 5.1 Grant read permissions for Nandi rules & skills in config.json (userSettings.globalPermissionGrants)
 CONFIG_JSON_FILE="${HOME}/.gemini/config/config.json"
 echo ""
-echo "Configuring rule permissions in ${CONFIG_JSON_FILE}..."
+echo "Configuring rule & skill permissions in ${CONFIG_JSON_FILE}..."
 
 "${PYTHON_EXEC}" - "${CONFIG_JSON_FILE}" "${PLUGIN_ROOT}" "${PROJECT_DIR:-}" "${GLOBAL_TARGET_DIR_2}/nandi" "${GLOBAL_TARGET_DIR_1}/nandi" <<'PY'
 import glob
@@ -774,29 +774,15 @@ project_dir = sys.argv[3] if len(sys.argv) > 3 and sys.argv[3] else None
 global_target_2 = sys.argv[4] if len(sys.argv) > 4 and sys.argv[4] else None
 global_target_1 = sys.argv[5] if len(sys.argv) > 5 and sys.argv[5] else None
 
-rules_dir = os.path.join(plugin_root, "rules")
-if not os.path.isdir(rules_dir):
-    print(f"  ℹ Rules directory not found at {rules_dir}, skipping rules permissions.")
-    sys.exit(0)
-
-# Discover all .md rule files in the rules directory
-md_files = []
-for root, _, files in os.walk(rules_dir):
-    for f in sorted(files):
-        if f.endswith(".md"):
-            md_files.append(os.path.join(root, f))
-
-if not md_files:
-    print(f"  ℹ No markdown rule files found in {rules_dir}.")
-    sys.exit(0)
-
-# Determine all paths to grant read permissions for
 target_paths = set()
-for file_path in md_files:
-    rel_path = os.path.relpath(file_path, plugin_root)
+discovered_rules = []
+discovered_skills = []
+
+def add_path_variants(path_item):
+    rel_path = os.path.relpath(path_item, plugin_root)
     # 1. Source canonical and absolute paths
-    target_paths.add(os.path.abspath(file_path))
-    target_paths.add(os.path.realpath(file_path))
+    target_paths.add(os.path.abspath(path_item))
+    target_paths.add(os.path.realpath(path_item))
 
     # 2. Global symlink target paths
     if global_target_2:
@@ -810,13 +796,31 @@ for file_path in md_files:
         target_paths.add(os.path.join(project_dir, ".agents", "plugins", "nandi", rel_path))
         target_paths.add(os.path.join(project_dir, ".antigravity", "plugins", "nandi", rel_path))
 
-# Also grant permission to the rules directories
-target_paths.add(os.path.abspath(rules_dir))
-target_paths.add(os.path.realpath(rules_dir))
-if global_target_2:
-    target_paths.add(os.path.join(global_target_2, "rules"))
-if project_dir:
-    target_paths.add(os.path.join(project_dir, "_agents", "plugins", "nandi", "rules"))
+# 1. Process rules directory
+rules_dir = os.path.join(plugin_root, "rules")
+if os.path.isdir(rules_dir):
+    add_path_variants(rules_dir)
+    for root, dirs, files in os.walk(rules_dir):
+        for d in dirs:
+            add_path_variants(os.path.join(root, d))
+        for f in sorted(files):
+            if f.endswith(".md"):
+                file_path = os.path.join(root, f)
+                add_path_variants(file_path)
+                discovered_rules.append(f)
+
+# 2. Process skills directory
+skills_dir = os.path.join(plugin_root, "skills")
+if os.path.isdir(skills_dir):
+    add_path_variants(skills_dir)
+    for root, dirs, files in os.walk(skills_dir):
+        for d in dirs:
+            add_path_variants(os.path.join(root, d))
+        for f in sorted(files):
+            file_path = os.path.join(root, f)
+            add_path_variants(file_path)
+            rel_to_skills = os.path.relpath(file_path, skills_dir)
+            discovered_skills.append(rel_to_skills)
 
 grants_to_add = [f"read_file({p})" for p in sorted(target_paths)]
 
@@ -863,15 +867,17 @@ def update_config_permissions(target_config_path):
     return added
 
 added_count = update_config_permissions(config_path)
-print(f"  ✓ Configured rule read permissions in {config_path} ({added_count} new grant(s) added)")
-for f in md_files:
-    print(f"    • {os.path.basename(f)}")
+print(f"  ✓ Configured rule & skill read permissions in {config_path} ({added_count} new grant(s) added)")
+if discovered_rules:
+    print(f"    • Rules ({len(discovered_rules)}): {', '.join(discovered_rules)}")
+if discovered_skills:
+    print(f"    • Skill Assets ({len(discovered_skills)}): {', '.join(discovered_skills)}")
 
 if project_dir:
     proj_cfg = os.path.join(project_dir, "_agents", "config.json")
     if os.path.exists(os.path.dirname(proj_cfg)):
         proj_added = update_config_permissions(proj_cfg)
-        print(f"  ✓ Configured rule read permissions in project config: {proj_cfg} ({proj_added} new grant(s) added)")
+        print(f"  ✓ Configured permissions in project config: {proj_cfg} ({proj_added} new grant(s) added)")
 PY
 
 echo ""
