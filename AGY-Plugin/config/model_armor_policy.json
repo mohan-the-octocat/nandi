@@ -1,6 +1,6 @@
 {
   "template": {
-    "name": "projects/YOUR_GCP_PROJECT_ID/locations/asia-south1/templates/fsi-india-compliance-template",
+    "name": "projects/nandi-test-project-2/locations/asia-south1/templates/fsi-india-compliance-template",
     "displayName": "India FSI Governance & Safety Template",
     "description": "Model Armor template enforcing RBI and SEBI guardrails against prompt injection, toxic content, data leakage, and malicious URLs in English and Indian languages.",
     "filterConfig": {
@@ -29,7 +29,7 @@
       "sdpFilterConfig": {
         "filterEnforcement": "ENFORCE",
         "advancedConfig": {
-          "inspectTemplate": "projects/YOUR_GCP_PROJECT_ID/locations/asia-south1/inspectTemplates/india-fsi-dlp-template"
+          "inspectTemplate": "projects/nandi-test-project-2/locations/asia-south1/inspectTemplates/india-fsi-dlp-template"
         }
       },
       "maliciousUriFilterConfig": {

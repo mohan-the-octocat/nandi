@@ -71,8 +71,8 @@ jobs:
           # Core components: bin, config, rules, skills, src
           cp -rp AGY-Plugin/bin "${CLIENT_DIR}/"
           cp -rp AGY-Plugin/config "${CLIENT_DIR}/"
-          cp -rp AGY-Plugin/rules "${CLIENT_DIR}/"
-          cp -rp AGY-Plugin/skills "${CLIENT_DIR}/"
+          [ -d AGY-Plugin/rules ] && cp -rp AGY-Plugin/rules "${CLIENT_DIR}/" || true
+          [ -d AGY-Plugin/skills ] && cp -rp AGY-Plugin/skills "${CLIENT_DIR}/" || true
           cp -rp AGY-Plugin/src "${CLIENT_DIR}/"
 
           # Runtime log directory

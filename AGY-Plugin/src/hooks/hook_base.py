@@ -3,6 +3,7 @@
 import json
 import os
 import sys
+import time
 from typing import Any, Dict, Optional, Tuple
 
 
@@ -94,6 +95,65 @@ class AntigravityHookBase:
 
         return None
 
+    def get_event_type(self) -> str:
+        """Determines the current hook event type from CLI flags or stdin payload."""
+        for arg in sys.argv[1:]:
+            if arg.startswith("--event="):
+                return arg.split("=", 1)[1].strip().lower()
+
+        if self.tool_call is not None or "toolCall" in self.payload:
+            return "pre_tool_use"
+        if "invocationNum" in self.payload and "stepIdx" not in self.payload and not self.transcript_path:
+            return "post_invocation"
+        return "pre_invocation"
+
+    def _get_block_flag_path(self) -> str:
+        safe_id = "".join(c for c in self.conversation_id if c.isalnum() or c in "-_")
+        if not safe_id or safe_id == "unknown":
+            safe_id = "default"
+        return f"/tmp/nandi_turn_blocked_{safe_id}.json"
+
+    def mark_turn_blocked(self, reason: str, metadata: Optional[Dict[str, Any]] = None) -> None:
+        """Flags the current turn as blocked by security policy."""
+        try:
+            path = self._get_block_flag_path()
+            data = {
+                "conversation_id": self.conversation_id,
+                "step_idx": self.step_idx,
+                "blocked": True,
+                "reason": reason,
+                "timestamp": time.time(),
+                "metadata": metadata or {},
+            }
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(data, f)
+        except Exception as e:
+            sys.stderr.write(f"[{self.hook_name}] Error persisting turn block state: {e}\n")
+
+    def is_turn_blocked(self) -> Tuple[bool, str]:
+        """Checks if the current turn was flagged as blocked."""
+        try:
+            path = self._get_block_flag_path()
+            if os.path.exists(path):
+                with open(path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                if time.time() - data.get("timestamp", 0) < 300:
+                    return True, data.get("reason", "Security policy violation detected.")
+                else:
+                    os.remove(path)
+        except Exception:
+            pass
+        return False, ""
+
+    def clear_turn_blocked(self) -> None:
+        """Clears the blocked turn flag."""
+        try:
+            path = self._get_block_flag_path()
+            if os.path.exists(path):
+                os.remove(path)
+        except Exception:
+            pass
+
     def reply_allow(self, reason: str = "Passed security checks") -> None:
         """Emits an allow decision for PreToolUse and exits cleanly."""
         resp = {"decision": "allow", "reason": reason}
@@ -133,8 +193,36 @@ class AntigravityHookBase:
         sys.exit(0)
 
     def reply_block_pre_invocation(self, reason: str) -> None:
-        """Aborts PreInvocation by writing the block reason to stderr and exiting with a non-zero status code so the prompt is not propagated to the backend model."""
-        sys.stderr.write(f"{reason}\n")
-        sys.stderr.flush()
-        sys.exit(1)
+        """Deterministic block for PreInvocation.
+
+        Persists the block flag, emits injectSteps with an ephemeral notification and a
+        system-level security override directive, and exits cleanly (code 0) so the prompt
+        is rejected without continuing to normal LLM execution or tool invocation.
+        """
+        self.mark_turn_blocked(reason)
+        resp = {
+            "injectSteps": [
+                {
+                    "ephemeralMessage": f"🛡️ [NANDI SECURITY GATEWAY]: Security Policy Violation Detected.\n{reason}\nThis request has been blocked and will not be processed."
+                },
+                {
+                    "systemMessage": {
+                        "systemMessage": f"CRITICAL SECURITY POLICY OVERRIDE: {reason}. You MUST NOT call any tools or execute any commands. Immediately output a direct refusal stating that this prompt was blocked by the security gateway and stop."
+                    }
+                }
+            ]
+        }
+        sys.stdout.write(json.dumps(resp) + "\n")
+        sys.stdout.flush()
+        sys.exit(0)
+
+    def reply_post_invocation(self, terminate: bool = False) -> None:
+        """Emits a valid PostInvocation response."""
+        resp = {
+            "injectSteps": [],
+            "terminationBehavior": "terminate" if terminate else ""
+        }
+        sys.stdout.write(json.dumps(resp) + "\n")
+        sys.stdout.flush()
+        sys.exit(0)
 

@@ -99,48 +99,84 @@ class ModelArmorPolicyEvaluator:
         filter_res = response.filter_results or {}
 
         # 1. Evaluate Prompt Injection & Jailbreak
-        pi_jb = filter_res.get("pi_and_jailbreak", {}).get("pi_and_jailbreak_filter_result", {})
-        if pi_jb.get("match_state") == "MATCH_FOUND":
-            conf_str = pi_jb.get("confidence_level", "HIGH")
+        pi_jb_wrapper = filter_res.get("pi_and_jailbreak", {})
+        pi_jb = pi_jb_wrapper.get("piAndJailbreakFilterResult") or pi_jb_wrapper.get("pi_and_jailbreak_filter_result", {})
+        pi_jb_match = pi_jb.get("matchState") or pi_jb.get("match_state")
+        if pi_jb_match == "MATCH_FOUND":
+            conf_str = pi_jb.get("confidenceLevel") or pi_jb.get("confidence_level", "HIGH")
             conf = ConfidenceLevel(conf_str) if conf_str in ConfidenceLevel.__members__ else ConfidenceLevel.HIGH
             if conf.is_at_or_above(self.pi_jb_threshold):
-                score = pi_jb.get("score", 0.9)
+                score = pi_jb.get("score", 0.95)
                 risk_score = max(risk_score, score)
                 violations.append(f"Prompt Injection / Jailbreak Attack Detected (Confidence: {conf_str}, Score: {score})")
                 rbi_codes.append("RBI-ITG-SEC-02")
                 sebi_codes.append("SEBI-CSCRF-AI-01")
 
         # 2. Evaluate Responsible AI (RAI)
-        rai = filter_res.get("rai", {}).get("rai_filter_result", {})
-        if rai.get("match_state") == "MATCH_FOUND":
-            type_results = rai.get("rai_filter_type_results", {})
+        rai_wrapper = filter_res.get("rai", {})
+        rai = rai_wrapper.get("raiFilterResult") or rai_wrapper.get("rai_filter_result", {})
+        rai_match = rai.get("matchState") or rai.get("match_state")
+        if rai_match == "MATCH_FOUND":
+            type_results = rai.get("raiFilterTypeResults") or rai.get("rai_filter_type_results", {})
             for cat, details in type_results.items():
-                conf_str = details.get("confidence_level", "LOW")
-                conf = ConfidenceLevel(conf_str) if conf_str in ConfidenceLevel.__members__ else ConfidenceLevel.LOW
-                if conf.is_at_or_above(self.rai_threshold):
-                    risk_score = max(risk_score, 0.85)
-                    violations.append(f"Responsible AI Safety Breach: {cat} (Confidence: {conf_str})")
-                    rbi_codes.append("RBI-ITG-SEC-02")
-                    sebi_codes.append("SEBI-CSCRF-AI-01")
+                cat_match = details.get("matchState") or details.get("match_state")
+                if cat_match == "MATCH_FOUND" or cat_match is None:
+                    conf_str = details.get("confidenceLevel") or details.get("confidence_level", "LOW")
+                    conf = ConfidenceLevel(conf_str) if conf_str in ConfidenceLevel.__members__ else ConfidenceLevel.LOW
+                    if conf.is_at_or_above(self.rai_threshold):
+                        risk_score = max(risk_score, 0.85)
+                        violations.append(f"Responsible AI Safety Breach: {cat} (Confidence: {conf_str})")
+                        rbi_codes.append("RBI-ITG-SEC-02")
+                        sebi_codes.append("SEBI-CSCRF-AI-01")
 
-        # 3. Evaluate Malicious URIs
-        mal_uris = filter_res.get("malicious_uris", {}).get("malicious_uri_filter_result", {})
-        if mal_uris.get("match_state") == "MATCH_FOUND":
-            matched = mal_uris.get("matched_uris", [])
+        # 3. Evaluate Sensitive Data Protection (SDP)
+        sdp_wrapper = filter_res.get("sdp", {})
+        sdp = sdp_wrapper.get("sdpFilterResult") or sdp_wrapper.get("sdp_filter_result", {})
+        inspect = sdp.get("inspectResult") or sdp.get("inspect_result", {})
+        sdp_match = inspect.get("matchState") or inspect.get("match_state")
+        if sdp_match == "MATCH_FOUND":
+            findings = inspect.get("findings", [])
+            types_found = []
+            for f in findings:
+                itype = f.get("infoType") or f.get("info_type")
+                if itype and itype not in types_found:
+                    types_found.append(itype)
+            types_str = ", ".join(types_found) if types_found else "FSI Regulatory PII"
+            risk_score = max(risk_score, 0.90)
+            violations.append(f"Sensitive Data Protection Breach: Detected {types_str}")
+            rbi_codes.append("RBI-ITG-SEC-01")
+            rbi_codes.append("DPDP-2023-SEC-08")
+            sebi_codes.append("SEBI-CSCRF-AI-01")
+
+        # 4. Evaluate Malicious URIs
+        mal_uris_wrapper = filter_res.get("malicious_uris", {})
+        mal_uris = mal_uris_wrapper.get("maliciousUriFilterResult") or mal_uris_wrapper.get("malicious_uri_filter_result", {})
+        mal_match = mal_uris.get("matchState") or mal_uris.get("match_state")
+        if mal_match == "MATCH_FOUND":
+            matched = mal_uris.get("matchedUris") or mal_uris.get("matched_uris", [])
             risk_score = max(risk_score, 0.95)
             violations.append(f"Malicious / Phishing URI Detected: {', '.join(matched) if matched else 'Unsafe URL'}")
             rbi_codes.append("RBI-ITG-SEC-02")
             sebi_codes.append("SEBI-CSCRF-NET-03")
 
-        # 4. Evaluate CSAM
-        csam = filter_res.get("csam", {}).get("csam_filter_filter_result", {})
-        if csam.get("match_state") == "MATCH_FOUND":
+        # 5. Evaluate CSAM
+        csam_wrapper = filter_res.get("csam", {})
+        csam = csam_wrapper.get("csamFilterFilterResult") or csam_wrapper.get("csam_filter_filter_result", {})
+        csam_match = csam.get("matchState") or csam.get("match_state")
+        if csam_match == "MATCH_FOUND":
             risk_score = 1.0
             violations.append("CSAM Content Policy Violation Detected")
             rbi_codes.append("RBI-ITG-SEC-01")
             sebi_codes.append("SEBI-CSCRF-AI-01")
 
-        # 5. Determine Decision
+        # 6. Fallback if overall MATCH_FOUND but specific filter detail unparsed
+        if response.filter_match_state == "MATCH_FOUND" and not violations:
+            risk_score = max(risk_score, 0.90)
+            violations.append("Model Armor Security Filter Triggered (MATCH_FOUND)")
+            rbi_codes.append("RBI-ITG-SEC-02")
+            sebi_codes.append("SEBI-CSCRF-AI-01")
+
+        # 7. Determine Decision
         has_violations = len(violations) > 0 or response.filter_match_state == "MATCH_FOUND"
 
         if has_violations:

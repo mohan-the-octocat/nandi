@@ -215,13 +215,16 @@ class ModelArmorClient:
                     resp_body = resp.read().decode("utf-8")
                     data = json.loads(resp_body)
                     elapsed_ms = (time.perf_counter() - start_time) * 1000.0
-                    s_result = data.get("sanitization_result", {})
+                    s_result = data.get("sanitizationResult") or data.get("sanitization_result", {})
+                    match_state = s_result.get("filterMatchState") or s_result.get("filter_match_state", "NO_MATCH_FOUND")
+                    inv_result = s_result.get("invocationResult") or s_result.get("invocation_result", "SUCCESS")
+                    filter_res = s_result.get("filterResults") or s_result.get("filter_results", {})
                     return ModelArmorResponse(
                         success=True,
                         raw_response=data,
-                        filter_match_state=s_result.get("filter_match_state", "NO_MATCH_FOUND"),
-                        invocation_result=s_result.get("invocation_result", "SUCCESS"),
-                        filter_results=s_result.get("filter_results", {}),
+                        filter_match_state=match_state,
+                        invocation_result=inv_result,
+                        filter_results=filter_res,
                         sanitized_text=prompt,
                         status_code=resp.status,
                         latency_ms=round(elapsed_ms, 2),

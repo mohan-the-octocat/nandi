@@ -18,26 +18,70 @@ def main() -> None:
     hook = AntigravityHookBase(hook_name="fsi-pii-guard")
     detector = PIIDetector()
     audit_logger = FSIAuditLogger()
+    event_type = hook.get_event_type()
 
-    text_to_scan, source = hook.extract_text_to_scan()
-    if not text_to_scan.strip():
-        if hook.tool_call:
-            hook.reply_allow("No actionable text in tool arguments")
+    # 1. PostInvocation Handling
+    if event_type == "post_invocation":
+        is_blocked, _ = hook.is_turn_blocked()
+        if is_blocked:
+            hook.clear_turn_blocked()
+            hook.reply_post_invocation(terminate=True)
         else:
-            hook.reply_pre_invocation()
+            hook.reply_post_invocation(terminate=False)
         return
 
-    # Scan text for Indian PII
-    report = detector.scan(text_to_scan, action_mode="BLOCK")
+    # 2. PreToolUse Defense-in-Depth Gate
+    if event_type == "pre_tool_use" or hook.tool_call:
+        is_blocked, block_reason = hook.is_turn_blocked()
+        if is_blocked:
+            hook.reply_deny(f"🚫 [PII Guard Gate] Execution denied: Turn flagged for security policy violation ({block_reason})")
+            return
 
+        text_to_scan, source = hook.extract_text_to_scan()
+        if not text_to_scan.strip():
+            hook.reply_allow("No actionable text in tool arguments")
+            return
+
+        report = detector.scan(text_to_scan, action_mode="BLOCK")
+        if report.contains_pii and report.blocked_by_policy:
+            masked_list = [m.to_dict() for m in report.matches]
+            violations = [f"{m.entity_name} ({m.masked_value})" for m in report.matches]
+
+            audit_logger.log_event(
+                hook_name="fsi-pii-guard",
+                event_type="PRE_TOOL_USE",
+                decision="deny",
+                reason=report.violation_summary,
+                risk_score=0.90 if report.highest_severity and report.highest_severity.value == "CRITICAL" else 0.70,
+                conversation_id=hook.conversation_id,
+                step_idx=hook.step_idx,
+                detected_violations=violations,
+                masked_entities=masked_list,
+                regulatory_frameworks=["RBI_MD_IT_2023", "SEBI_CSCRF_2024", "DPDP_ACT_2023"],
+                caller_metadata={"source": source, "tool_name": hook.tool_name},
+            )
+            deny_reason = f"🚫 [RBI & SEBI Governance Block] {report.violation_summary}"
+            hook.reply_deny(deny_reason)
+            return
+
+        hook.reply_allow("Clean: No sensitive Indian PII detected")
+        return
+
+    # 3. PreInvocation Handling
+    hook.clear_turn_blocked()
+    text_to_scan, source = hook.extract_text_to_scan()
+    if not text_to_scan.strip():
+        hook.reply_pre_invocation()
+        return
+
+    report = detector.scan(text_to_scan, action_mode="BLOCK")
     if report.contains_pii and report.blocked_by_policy:
-        # Format masked entities for audit log
         masked_list = [m.to_dict() for m in report.matches]
         violations = [f"{m.entity_name} ({m.masked_value})" for m in report.matches]
 
         audit_logger.log_event(
             hook_name="fsi-pii-guard",
-            event_type="PRE_TOOL_USE" if hook.tool_call else "PRE_INVOCATION",
+            event_type="PRE_INVOCATION",
             decision="deny",
             reason=report.violation_summary,
             risk_score=0.90 if report.highest_severity and report.highest_severity.value == "CRITICAL" else 0.70,
@@ -46,20 +90,13 @@ def main() -> None:
             detected_violations=violations,
             masked_entities=masked_list,
             regulatory_frameworks=["RBI_MD_IT_2023", "SEBI_CSCRF_2024", "DPDP_ACT_2023"],
-            caller_metadata={"source": source, "tool_name": hook.tool_name},
+            caller_metadata={"source": source},
         )
-
         deny_reason = f"🚫 [RBI & SEBI Governance Block] {report.violation_summary}"
-        if hook.tool_call:
-            hook.reply_deny(deny_reason)
-        else:
-            hook.reply_pre_invocation(inject_message=deny_reason)
+        hook.reply_block_pre_invocation(deny_reason)
+        return
 
-    # Clean execution
-    if hook.tool_call:
-        hook.reply_allow("Clean: No sensitive Indian PII detected")
-    else:
-        hook.reply_pre_invocation()
+    hook.reply_pre_invocation()
 
 
 if __name__ == "__main__":

@@ -1,12 +1,12 @@
 # Nandi
 
 [![Plugin: Nandi](https://img.shields.io/badge/Plugin-Nandi-purple)](AGY-Plugin/plugin.json)
-[![Release: v1.0.1](https://img.shields.io/badge/Release-v1.0.1-blue)](https://github.com/mohan-the-octocat/nandi/releases)
+[![Release: v1.1.0-beta.1](https://img.shields.io/badge/Release-v1.1.0--beta.1-blue)](https://github.com/mohan-the-octocat/nandi/releases)
 [![Compliance: RBI IT Governance 2023](https://img.shields.io/badge/Compliance-RBI%20IT%20Governance%202023-blue)](docs/RBI_COMPLIANCE.md)
 [![Compliance: SEBI CSCRF 2024](https://img.shields.io/badge/Compliance-SEBI%20CSCRF%202024-green)](docs/SEBI_COMPLIANCE.md)
 [![Compliance: DPDP Act 2023](https://img.shields.io/badge/Compliance-DPDP%20Act%202023-orange)](docs/RBI_COMPLIANCE.md)
 [![Security: Google Cloud Model Armor](https://img.shields.io/badge/Security-Google%20Cloud%20Model%20Armor-red)](GCP/MODEL_ARMOR_SETUP.md)
-[![Test Suite: 100% Pass](https://img.shields.io/badge/Tests-34%2F34%20Passing-brightgreen)](tests/run_all_tests.py)
+[![Test Suite: 100% Pass](https://img.shields.io/badge/Tests-36%2F36%20Passing-brightgreen)](tests/run_all_tests.py)
 
 **Nandi**: Enterprise-grade Governance, Risk, and Compliance (GRC) Antigravity Plugin providing real-time **Indian PII Regex/Checksum Protection** and **Google Cloud Model Armor Safety Filtering** for Financial Services Institutions (Banks, NBFCs, Stock Brokers, AMCs, FinTechs) in India.
 
