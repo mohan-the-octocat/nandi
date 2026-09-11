@@ -123,6 +123,11 @@ locals {
   model_armor_payload = jsonencode({
     template_metadata = {
       custom_prompt_safety_error_message = "Prompt blocked by FSI Model Armor security policy."
+      log_sanitize_operations            = var.enable_prompt_response_logging
+      log_template_operations            = var.enable_template_operations_logging
+      filter_version_selector = {
+        alias = var.filter_version_alias
+      }
     }
     filter_config = merge(
       {
@@ -149,6 +154,19 @@ locals {
               confidence_level = var.rai_dangerous_content_confidence
             }
           ]
+        }
+      },
+      var.enable_basic_sdp ? {
+        sdp_settings = {
+          basic_config = {
+            filter_enforcement = "ENABLED"
+          }
+        }
+        } : {
+        sdp_settings = {
+          basic_config = {
+            filter_enforcement = "DISABLED"
+          }
         }
       },
       local.include_malicious_uri ? {

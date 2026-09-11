@@ -20,9 +20,13 @@ This Terraform module automates the entire server-side deployment of **Google Cl
 |   +----------------------------------------------------------------------------------+   |
 |                                                                                          |
 |   +----------------------------------------------------------------------------------+   |
-|   | 3. Model Armor Safety Template: (projects/*/locations/asia-south1/templates/*)   |   |
+|   | 3. Model Armor Template: Nandi-compliance-template                               |   |
+|   |    - Prompt & Response Logging: Enabled (log_sanitize_operations)                |   |
+|   |    - Template Operations Logging: Enabled (log_template_operations)              |   |
+|   |    - Filter Version: Stable Track (FILTER_VERSION_ALIAS_STABLE)                  |   |
+|   |    - Basic Sensitive Data Protection: Enabled (predefined infoTypes)             |   |
 |   |    - Prompt Injection & Jailbreak (PI/JB) Defense: LOW_AND_ABOVE                 |   |
-|   |    - Responsible AI (RAI) Content Filters: Hate, Harm, Sexual, Danger            |   |
+|   |    - Responsible AI (RAI) Content Filters: Medium and Above across all types     |   |
 |   |    - Malicious URI Interception (Phishing, Malware, Unapproved domains)          |   |
 |   |    - Multi-Language Detection (English + 7 Indian Scheduled Languages)           |   |
 |   +----------------------------------------------------------------------------------+   |
@@ -84,7 +88,7 @@ model_armor:
   enabled: true
   project_id: "your-gcp-project-id"
   location: "asia-south1"
-  template_id: "fsi-india-compliance-template"
+  template_id: "Nandi-compliance-template"
 ```
 
 ---

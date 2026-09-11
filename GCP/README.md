@@ -47,13 +47,17 @@ These components are decoupled from the client developer plugin and are deployed
 ## Server-Side Managed Resources
 
 ### 1. Google Cloud Model Armor Template
-- **Template ID**: `fsi-india-compliance-template`
+- **Template ID**: `Nandi-compliance-template`
 - **Region**: `asia-south1` (Mumbai) or `us-central1`
-- **Resource Name**: `projects/${PROJECT_ID}/locations/${REGION}/templates/fsi-india-compliance-template`
+- **Resource Name**: `projects/${PROJECT_ID}/locations/${REGION}/templates/Nandi-compliance-template`
 - **Regional Endpoint (REP)**: `modelarmor.${REGION}.rep.googleapis.com` (e.g., `modelarmor.asia-south1.rep.googleapis.com`)
-- **Configured Filters**:
+- **Configured Filters & Metadata**:
+  - **Prompt & Response Logging**: `log_sanitize_operations: true`
+  - **Template Operations Logging**: `log_template_operations: true`
+  - **Filter Version**: Stable Track (`FILTER_VERSION_ALIAS_STABLE`)
+  - **Basic Sensitive Data Protection**: `basic_config.filter_enforcement: ENABLED`
   - **Prompt Injection & Jailbreak**: `filter_enforcement: ENABLED`, `confidence_level: LOW_AND_ABOVE`
-  - **Responsible AI (RAI)**: Hate speech, harassment, sexually explicit, and dangerous content filters set to `STRICT`
+  - **Responsible AI (RAI)**: Hate speech, harassment, sexually explicit, and dangerous content filters set to `MEDIUM_AND_ABOVE`
   - **Malicious URIs**: Proactive domain & phishing link detection (in supported regions)
   - **Multi-Language Detection**: Automatic language normalization and safety checks
 
@@ -119,7 +123,7 @@ If deploying without Terraform, use the pre-generated JSON template:
 PROJECT_ID="$(gcloud config get-value project)"
 REGION="asia-south1"
 ENDPOINT="modelarmor.${REGION}.rep.googleapis.com"
-TEMPLATE_ID="fsi-india-compliance-template"
+TEMPLATE_ID="Nandi-compliance-template"
 
 # Enable required APIs
 gcloud services enable modelarmor.googleapis.com dlp.googleapis.com logging.googleapis.com --project="${PROJECT_ID}"

@@ -9,22 +9,32 @@ project_id = "your-gcp-project-id"
 # Options: "asia-south1" (Mumbai) or "asia-south2" (Delhi)
 region = "asia-south1"
 
-# Model Armor Template Resource ID
-template_id           = "fsi-india-compliance-template"
-template_display_name = "India FSI Governance & Safety Template"
+# Model Armor Template Resource ID & Display Name
+template_id           = "Nandi-compliance-template"
+template_display_name = "Nandi-compliance-template"
 
 # Antigravity Service Account ID
 service_account_id = "antigravity-fsi-guard-sa"
+
+# Logging Configuration
+enable_prompt_response_logging     = true
+enable_template_operations_logging = true
+
+# Filter Version Selector (Stable track)
+filter_version_alias = "FILTER_VERSION_ALIAS_STABLE"
+
+# Sensitive Data Protection (Basic predefined infoTypes)
+enable_basic_sdp = true
 
 # Prompt Injection & Jailbreak Enforcement
 pi_jb_enforcement      = "ENFORCE"
 pi_jb_confidence_level = "LOW_AND_ABOVE"
 
-# Responsible AI Safety Filters
+# Responsible AI Safety Filters (Medium and above for all categories)
 rai_hate_speech_confidence        = "MEDIUM_AND_ABOVE"
 rai_harassment_confidence         = "MEDIUM_AND_ABOVE"
-rai_sexual_content_confidence     = "LOW_AND_ABOVE"
-rai_dangerous_content_confidence  = "LOW_AND_ABOVE"
+rai_sexual_content_confidence     = "MEDIUM_AND_ABOVE"
+rai_dangerous_content_confidence  = "MEDIUM_AND_ABOVE"
 
 # Threat & Language Guardrails
 enable_malicious_uri_filter  = true

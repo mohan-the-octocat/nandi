@@ -64,7 +64,7 @@ class ModelArmorClient:
         self,
         project_id: str = "your-gcp-project-id",
         location: str = "asia-south1",
-        template_id: str = "fsi-india-compliance-template",
+        template_id: str = "Nandi-compliance-template",
         endpoint: Optional[str] = None,
         timeout_seconds: float = 5.0,
         retry_attempts: int = 2,

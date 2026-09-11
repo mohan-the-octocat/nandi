@@ -19,7 +19,7 @@ REPO_ROOT="$(cd "${GCP_DIR}/.." && pwd)"
 
 # Default Configuration
 DEFAULT_REGION="asia-south1"
-DEFAULT_TEMPLATE_ID="fsi-india-compliance-template"
+DEFAULT_TEMPLATE_ID="Nandi-compliance-template"
 DEFAULT_SA_NAME="sa-nandi-guard"
 
 PROJECT_ID=""
@@ -357,9 +357,14 @@ filter_cfg = {
         'rai_filters': [
             {'filter_type': 'HATE_SPEECH', 'confidence_level': 'MEDIUM_AND_ABOVE'},
             {'filter_type': 'HARASSMENT', 'confidence_level': 'MEDIUM_AND_ABOVE'},
-            {'filter_type': 'SEXUALLY_EXPLICIT', 'confidence_level': 'LOW_AND_ABOVE'},
-            {'filter_type': 'DANGEROUS', 'confidence_level': 'LOW_AND_ABOVE'}
+            {'filter_type': 'SEXUALLY_EXPLICIT', 'confidence_level': 'MEDIUM_AND_ABOVE'},
+            {'filter_type': 'DANGEROUS', 'confidence_level': 'MEDIUM_AND_ABOVE'}
         ]
+    },
+    'sdp_settings': {
+        'basic_config': {
+            'filter_enforcement': 'ENABLED'
+        }
     }
 }
 
@@ -367,7 +372,12 @@ if include_uri:
     filter_cfg['malicious_uri_filter_settings'] = {'filter_enforcement': 'ENABLED'}
 
 template_metadata = {
-    'custom_prompt_safety_error_message': 'Prompt blocked by FSI Model Armor security policy.'
+    'custom_prompt_safety_error_message': 'Prompt blocked by FSI Model Armor security policy.',
+    'log_sanitize_operations': True,
+    'log_template_operations': True,
+    'filter_version_selector': {
+        'alias': 'FILTER_VERSION_ALIAS_STABLE'
+    }
 }
 
 # Multi-language detection is supported in global/US/EU regions; excluded in domestic Indian regions

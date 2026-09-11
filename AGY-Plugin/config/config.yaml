@@ -2,7 +2,7 @@
 # Designed for Indian Financial Services Institutions under RBI & SEBI Governance
 
 plugin_name: "nandi"
-version: "1.1.0-beta.1"
+version: "1.1.0-beta.2"
 description: "Enterprise GRC & Security Guard Plugin for Antigravity"
 environment: "production" # development, staging, production
 
@@ -32,7 +32,7 @@ model_armor:
   action_on_match: "BLOCK" # BLOCK, FORCE_ASK, WARN
   project_id: "nandi-test-project-2"
   location: "asia-south1" # asia-south1 (Mumbai, India) for domestic data residency
-  template_id: "fsi-india-compliance-template"
+  template_id: "Nandi-compliance-template"
   endpoint: "modelarmor.asia-south1.rep.googleapis.com" # Regional REP endpoint
   fail_open_on_network_error: false # FSI compliance requires Fail-Closed (false)
   timeout_seconds: 5.0
@@ -46,8 +46,8 @@ model_armor:
     responsible_ai:
       hate_speech: "MEDIUM_AND_ABOVE"
       harassment: "MEDIUM_AND_ABOVE"
-      sexually_explicit: "LOW_AND_ABOVE"
-      dangerous_content: "LOW_AND_ABOVE"
+      sexually_explicit: "MEDIUM_AND_ABOVE"
+      dangerous_content: "MEDIUM_AND_ABOVE"
       action: "BLOCK"
     sensitive_data_protection:
       action: "BLOCK"
