@@ -168,7 +168,10 @@ Nandi enforces a clean architectural separation between **Client-Side Plugin Con
 repo-root/
 ├── AGY-Plugin/                      # Antigravity Developer Plugin (Installed)
 │   ├── bin/                         # Plugin installer automation
-│   │   └── install-nandi.sh         # 5-step installer (installs AGY-Plugin/ into IDE)
+│   │   ├── install-nandi.sh         # 5-step installer (Linux / macOS)
+│   │   ├── install-nandi.ps1        # 5-step installer (Windows PowerShell)
+│   │   ├── install-nandi.cmd        # Windows CMD launcher
+│   │   └── install-nandi.bat        # Windows Command Prompt launcher
 │   ├── config/                      # Local PII & Model Armor policy configs
 │   ├── hooks.json                   # PreInvocation & PreToolUse lifecycle hooks
 │   ├── logs/                        # Local tamper-evident audit logs
@@ -179,14 +182,16 @@ repo-root/
 │
 ├── GCP/                             # Cloud Infrastructure (NOT installed into Antigravity)
 │   ├── bin/                         # Server infrastructure CLI tooling
-│   │   └── setup-model-armor.sh     # End-to-end automated Model Armor setup script
+│   │   ├── setup-model-armor.sh     # Automated Model Armor setup (Linux / macOS)
+│   │   ├── setup-model-armor.ps1    # Automated Model Armor setup (Windows PowerShell)
+│   │   ├── setup-model-armor.cmd    # Windows CMD launcher
+│   │   └── setup-model-armor.bat    # Windows Command Prompt launcher
 │   ├── terraform/                   # Production-ready Terraform templates
 │   │   ├── main.tf                  # Model Armor, DLP, Logging bucket resources
 │   │   ├── variables.tf             # Project, region, and IAM variables
 │   │   └── outputs.tf               # Regional endpoints and resource IDs
 │   ├── generated_model_armor_template.json # Standalone REST API payload
-│   ├── MODEL_ARMOR_SETUP.md         # In-depth server deployment guide
-│   └── README.md                    # GCP infrastructure architecture & operations
+│   └── MODEL_ARMOR_SETUP.md         # In-depth server deployment guide
 │
 └── tests/                           # Unit & end-to-end test suite
 ```

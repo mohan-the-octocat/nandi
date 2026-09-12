@@ -50,50 +50,60 @@ jobs:
 
       - name: Create Staging Directories
         run: |
-          mkdir -p staging/nandi-client
-          mkdir -p staging/nandi-server
+          mkdir -p staging/linux
+          mkdir -p staging/darwin
+          mkdir -p staging/windows
+          mkdir -p staging/universal
           mkdir -p dist
 
       # ========================================================================
-      # 1. Package Nandi-Client (Antigravity Plugin)
+      # 1. Package Nandi-Client (Antigravity Plugin) - OS Specific & Universal
       # ========================================================================
       - name: Stage Nandi-Client Assets
         run: |
-          CLIENT_DIR="staging/nandi-client"
+          # Helper function to stage client base files
+          stage_client_base() {
+            local target_dir="$1"
+            mkdir -p "${target_dir}"
 
-          echo "Staging Nandi-Client installables..."
-          
-          # Plugin manifests & metadata
-          cp -p AGY-Plugin/plugin.json "${CLIENT_DIR}/"
-          cp -p AGY-Plugin/hooks.json "${CLIENT_DIR}/"
-          cp -p AGY-Plugin/README.md "${CLIENT_DIR}/"
+            # Plugin manifests & metadata
+            cp -p AGY-Plugin/plugin.json "${target_dir}/"
+            cp -p AGY-Plugin/hooks.json "${target_dir}/"
+            cp -p README.md "${target_dir}/"
 
-          # Core components: bin, config, rules, skills, src
-          cp -rp AGY-Plugin/bin "${CLIENT_DIR}/"
-          cp -rp AGY-Plugin/config "${CLIENT_DIR}/"
-          [ -d AGY-Plugin/rules ] && cp -rp AGY-Plugin/rules "${CLIENT_DIR}/" || true
-          [ -d AGY-Plugin/skills ] && cp -rp AGY-Plugin/skills "${CLIENT_DIR}/" || true
-          cp -rp AGY-Plugin/src "${CLIENT_DIR}/"
+            # Core components: config, rules, skills, src
+            cp -rp AGY-Plugin/config "${target_dir}/"
+            [ -d AGY-Plugin/rules ] && cp -rp AGY-Plugin/rules "${target_dir}/" || true
+            [ -d AGY-Plugin/skills ] && cp -rp AGY-Plugin/skills "${target_dir}/" || true
+            cp -rp AGY-Plugin/src "${target_dir}/"
 
-          # Runtime log directory
-          mkdir -p "${CLIENT_DIR}/logs"
-          touch "${CLIENT_DIR}/logs/.gitkeep"
+            # Runtime log directory
+            mkdir -p "${target_dir}/logs"
+            touch "${target_dir}/logs/.gitkeep"
 
-          # Clean exclusions: avoid tests, virtualenvs, runtime logs, bytecode caches
-          echo "Purging tests and unnecessary files from Nandi-Client..."
-          find "${CLIENT_DIR}" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
-          find "${CLIENT_DIR}" -name "*.pyc" -delete 2>/dev/null || true
-          find "${CLIENT_DIR}" -name "*.pyo" -delete 2>/dev/null || true
-          find "${CLIENT_DIR}" -name "*.pyd" -delete 2>/dev/null || true
-          find "${CLIENT_DIR}" -name ".DS_Store" -delete 2>/dev/null || true
-          rm -rf "${CLIENT_DIR}/.venv" 2>/dev/null || true
-          rm -f "${CLIENT_DIR}/logs/*.log" 2>/dev/null || true
+            # Clean exclusions
+            find "${target_dir}" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+            find "${target_dir}" -name "*.pyc" -delete 2>/dev/null || true
+            find "${target_dir}" -name "*.pyo" -delete 2>/dev/null || true
+            find "${target_dir}" -name "*.pyd" -delete 2>/dev/null || true
+            find "${target_dir}" -name ".DS_Store" -delete 2>/dev/null || true
+            rm -rf "${target_dir}/.venv" 2>/dev/null || true
+            rm -f "${target_dir}/logs/*.log" 2>/dev/null || true
+          }
 
-          # Create standalone Quickstart Guide for client users
-          cat << 'SUBEOF' > "${CLIENT_DIR}/QUICKSTART.md"
-          # Nandi-Client (Antigravity Plugin) Quickstart
+          # --------------------------------------------------------------------
+          # 1.1 Linux Client
+          # --------------------------------------------------------------------
+          CLIENT_LINUX="staging/linux/nandi-client"
+          stage_client_base "${CLIENT_LINUX}"
+          mkdir -p "${CLIENT_LINUX}/bin"
+          cp -p AGY-Plugin/bin/install-nandi.sh "${CLIENT_LINUX}/bin/"
+          chmod +x "${CLIENT_LINUX}/bin/install-nandi.sh" "${CLIENT_LINUX}/src/cli/grc_admin.py" "${CLIENT_LINUX}/src/hooks/"*.py
 
-          This package contains the ready-to-run installables for **Nandi**, the enterprise GRC & security guard plugin for Google Antigravity.
+          cat << 'SUBEOF' > "${CLIENT_LINUX}/QUICKSTART.md"
+          # Nandi-Client (Linux) Quickstart
+
+          This package contains the ready-to-run installables for **Nandi** on Linux.
 
           ## Prerequisites
           - Google Cloud SDK (`gcloud` CLI) installed and authenticated (`gcloud auth login`).
@@ -102,116 +112,377 @@ jobs:
 
           ## Installation
 
-          Run the automated installer script:
+          Extract archive and run the automated installer:
           ```bash
+          tar -xzf nandi-client-linux.tar.gz
+          cd nandi-client
+
           # 1. Global Installation (Recommended - installs to ~/.gemini/config/plugins/nandi):
           ./bin/install-nandi.sh --project-id YOUR_GCP_PROJECT_ID
 
           # 2. Or Project-Scoped Installation (isolated to a specific workspace directory):
           ./bin/install-nandi.sh --project-id YOUR_GCP_PROJECT_ID --project-dir /path/to/my-project
-
-          # 3. Optional: Use host system python instead of isolated .venv:
-          ./bin/install-nandi.sh --project-id YOUR_GCP_PROJECT_ID --system
           ```
 
           ## Verify Installation
-          Check plugin status and active governance policies:
           ```bash
           python3 src/cli/grc_admin.py status
           ```
           SUBEOF
 
-          # Set executable permissions
-          chmod +x "${CLIENT_DIR}/bin/install-nandi.sh"
-          chmod +x "${CLIENT_DIR}/src/cli/grc_admin.py"
-          chmod +x "${CLIENT_DIR}/src/hooks/"*.py
+          # --------------------------------------------------------------------
+          # 1.2 Darwin / macOS Client
+          # --------------------------------------------------------------------
+          CLIENT_DARWIN="staging/darwin/nandi-client"
+          stage_client_base "${CLIENT_DARWIN}"
+          mkdir -p "${CLIENT_DARWIN}/bin"
+          cp -p AGY-Plugin/bin/install-nandi.sh "${CLIENT_DARWIN}/bin/"
+          chmod +x "${CLIENT_DARWIN}/bin/install-nandi.sh" "${CLIENT_DARWIN}/src/cli/grc_admin.py" "${CLIENT_DARWIN}/src/hooks/"*.py
+
+          cat << 'SUBEOF' > "${CLIENT_DARWIN}/QUICKSTART.md"
+          # Nandi-Client (macOS / Darwin) Quickstart
+
+          This package contains the ready-to-run installables for **Nandi** on macOS.
+
+          ## Prerequisites
+          - Google Cloud SDK (`gcloud` CLI) installed and authenticated (`gcloud auth login`).
+          - Python 3.8+ on system PATH.
+          - Google Cloud Project with Model Armor configured (see `nandi-server` package).
+
+          ## Installation
+
+          Extract archive and run the automated installer:
+          ```bash
+          tar -xzf nandi-client-darwin.tar.gz
+          cd nandi-client
+
+          # 1. Global Installation (Recommended - installs to ~/.gemini/config/plugins/nandi):
+          ./bin/install-nandi.sh --project-id YOUR_GCP_PROJECT_ID
+
+          # 2. Or Project-Scoped Installation (isolated to a specific workspace directory):
+          ./bin/install-nandi.sh --project-id YOUR_GCP_PROJECT_ID --project-dir /path/to/my-project
+          ```
+
+          ## Verify Installation
+          ```bash
+          python3 src/cli/grc_admin.py status
+          ```
+          SUBEOF
+
+          # --------------------------------------------------------------------
+          # 1.3 Windows Client
+          # --------------------------------------------------------------------
+          CLIENT_WINDOWS="staging/windows/nandi-client"
+          stage_client_base "${CLIENT_WINDOWS}"
+          mkdir -p "${CLIENT_WINDOWS}/bin"
+          cp -p AGY-Plugin/bin/install-nandi.ps1 "${CLIENT_WINDOWS}/bin/"
+          cp -p AGY-Plugin/bin/install-nandi.cmd "${CLIENT_WINDOWS}/bin/"
+          cp -p AGY-Plugin/bin/install-nandi.bat "${CLIENT_WINDOWS}/bin/"
+          cp -p AGY-Plugin/bin/install-nandi.sh "${CLIENT_WINDOWS}/bin/"
+
+          # Configure hooks.json defaults for Windows virtual environment (.venv\Scripts\python.exe)
+          python3 - "${CLIENT_WINDOWS}/hooks.json" <<'PY'
+          import json, sys
+          path = sys.argv[1]
+          with open(path, "r", encoding="utf-8") as f:
+              data = json.load(f)
+          for guard, cfg in data.items():
+              if not isinstance(cfg, dict): continue
+              for stage in ["PreInvocation", "PreToolUse", "PostInvocation"]:
+                  for item in cfg.get(stage, []):
+                      if isinstance(item, dict):
+                          if "command" in item:
+                              item["command"] = item["command"].replace(".venv/bin/python3", ".venv\\Scripts\\python.exe")
+                          for sub in item.get("hooks", []):
+                              if isinstance(sub, dict) and "command" in sub:
+                                  sub["command"] = sub["command"].replace(".venv/bin/python3", ".venv\\Scripts\\python.exe")
+          with open(path, "w", encoding="utf-8") as f:
+              json.dump(data, f, indent=2)
+              f.write("\n")
+          PY
+
+          cat << 'SUBEOF' > "${CLIENT_WINDOWS}/QUICKSTART.md"
+          # Nandi-Client (Windows) Quickstart
+
+          This package contains the ready-to-run installables for **Nandi** on Windows.
+
+          ## Prerequisites
+          - Google Cloud SDK (`gcloud` CLI) installed and authenticated (`gcloud auth login`).
+          - Python 3.8+ on Windows system PATH.
+          - Google Cloud Project with Model Armor configured (see `nandi-server` package).
+
+          ## Installation
+
+          Extract archive (using tar built into Windows 10/11 or PowerShell Expand-Archive):
+          ```powershell
+          tar -xzf nandi-client-windows.tar.gz
+          cd nandi-client
+
+          # 1. Global Installation via PowerShell (Recommended):
+          .\bin\install-nandi.ps1 -ProjectId YOUR_GCP_PROJECT_ID
+
+          # 2. Or Project-Scoped Installation:
+          .\bin\install-nandi.ps1 -ProjectId YOUR_GCP_PROJECT_ID -ProjectDir C:\path\to\my-project
+
+          # 3. Alternatively via Windows Command Prompt (CMD):
+          .\bin\install-nandi.cmd --project-id YOUR_GCP_PROJECT_ID
+          ```
+
+          ## Verify Installation
+          ```powershell
+          python src\cli\grc_admin.py status
+          ```
+          SUBEOF
+
+          # --------------------------------------------------------------------
+          # 1.4 Universal Client (All Platforms Fallback)
+          # --------------------------------------------------------------------
+          CLIENT_UNIVERSAL="staging/universal/nandi-client"
+          stage_client_base "${CLIENT_UNIVERSAL}"
+          mkdir -p "${CLIENT_UNIVERSAL}/bin"
+          cp -p AGY-Plugin/bin/install-nandi.sh "${CLIENT_UNIVERSAL}/bin/"
+          cp -p AGY-Plugin/bin/install-nandi.ps1 "${CLIENT_UNIVERSAL}/bin/"
+          cp -p AGY-Plugin/bin/install-nandi.cmd "${CLIENT_UNIVERSAL}/bin/"
+          cp -p AGY-Plugin/bin/install-nandi.bat "${CLIENT_UNIVERSAL}/bin/"
+          chmod +x "${CLIENT_UNIVERSAL}/bin/install-nandi.sh" "${CLIENT_UNIVERSAL}/src/cli/grc_admin.py" "${CLIENT_UNIVERSAL}/src/hooks/"*.py
+
+          cat << 'SUBEOF' > "${CLIENT_UNIVERSAL}/QUICKSTART.md"
+          # Nandi-Client Multi-Platform Quickstart
+
+          This package contains the ready-to-run installables for **Nandi** across Linux, macOS, and Windows.
+
+          ## Installation
+
+          ### Linux & macOS:
+          ```bash
+          tar -xzf nandi-client.tar.gz
+          cd nandi-client
+          ./bin/install-nandi.sh --project-id YOUR_GCP_PROJECT_ID
+          ```
+
+          ### Windows (PowerShell):
+          ```powershell
+          tar -xzf nandi-client.tar.gz
+          cd nandi-client
+          .\bin\install-nandi.ps1 -ProjectId YOUR_GCP_PROJECT_ID
+          ```
+
+          ### Windows (Command Prompt):
+          ```cmd
+          .\bin\install-nandi.cmd --project-id YOUR_GCP_PROJECT_ID
+          ```
+          SUBEOF
 
       - name: Archive Nandi-Client Packages
         run: |
-          cd staging
-          tar -czf ../dist/nandi-client.tar.gz nandi-client
-          zip -rq ../dist/nandi-client.zip nandi-client
-          cd ..
-          echo "Nandi-Client packaged successfully:"
-          ls -lh dist/nandi-client.*
+          # Linux
+          tar -czf dist/nandi-client-linux.tar.gz -C staging/linux nandi-client
+          (cd staging/linux && zip -rq ../../dist/nandi-client-linux.zip nandi-client)
+
+          # Darwin / macOS
+          tar -czf dist/nandi-client-darwin.tar.gz -C staging/darwin nandi-client
+          (cd staging/darwin && zip -rq ../../dist/nandi-client-darwin.zip nandi-client)
+          cp -p dist/nandi-client-darwin.tar.gz dist/nandi-client-macos.tar.gz
+          cp -p dist/nandi-client-darwin.zip dist/nandi-client-macos.zip
+
+          # Windows
+          tar -czf dist/nandi-client-windows.tar.gz -C staging/windows nandi-client
+          (cd staging/windows && zip -rq ../../dist/nandi-client-windows.zip nandi-client)
+
+          # Universal
+          tar -czf dist/nandi-client.tar.gz -C staging/universal nandi-client
+          (cd staging/universal && zip -rq ../../dist/nandi-client.zip nandi-client)
+
+          echo "Nandi-Client packages staged successfully:"
+          ls -lh dist/nandi-client*
 
       # ========================================================================
       # 2. Package Nandi-Server (GCP Terraform & Model Armor Provisioning)
       # ========================================================================
       - name: Stage Nandi-Server Assets
         run: |
-          SERVER_DIR="staging/nandi-server"
+          stage_server_base() {
+            local target_dir="$1"
+            mkdir -p "${target_dir}"
 
-          echo "Staging Nandi-Server templates & scripts..."
+            # Terraform infrastructure module
+            cp -rp GCP/terraform "${target_dir}/"
 
-          # Provisioning script
-          cp -rp GCP/bin "${SERVER_DIR}/"
-          chmod +x "${SERVER_DIR}/bin/setup-model-armor.sh"
+            # Technical documentation and guides
+            cp -p GCP/MODEL_ARMOR_SETUP.md "${target_dir}/"
+            cp -p README.md "${target_dir}/"
 
-          # Terraform infrastructure module
-          cp -rp GCP/terraform "${SERVER_DIR}/"
+            # Clean exclusions
+            rm -rf "${target_dir}/terraform/.terraform" 2>/dev/null || true
+            rm -f "${target_dir}/terraform/.terraform.lock.hcl" 2>/dev/null || true
+            rm -f "${target_dir}/terraform"/*.tfstate* 2>/dev/null || true
+            rm -f "${target_dir}/terraform/terraform.tfvars" 2>/dev/null || true
+            rm -f "${target_dir}/terraform/generated_model_armor_template.json" 2>/dev/null || true
+            rm -f "${target_dir}/generated_model_armor_template.json" 2>/dev/null || true
+            find "${target_dir}" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+            find "${target_dir}" -name "*.pyc" -delete 2>/dev/null || true
+            find "${target_dir}" -name ".DS_Store" -delete 2>/dev/null || true
+          }
 
-          # Technical documentation and guides
-          cp -p GCP/MODEL_ARMOR_SETUP.md "${SERVER_DIR}/"
-          cp -p GCP/README.md "${SERVER_DIR}/"
+          # --------------------------------------------------------------------
+          # 2.1 Linux Server
+          # --------------------------------------------------------------------
+          SERVER_LINUX="staging/linux/nandi-server"
+          stage_server_base "${SERVER_LINUX}"
+          mkdir -p "${SERVER_LINUX}/bin"
+          cp -p GCP/bin/setup-model-armor.sh "${SERVER_LINUX}/bin/"
+          chmod +x "${SERVER_LINUX}/bin/setup-model-armor.sh"
 
-          # Clean exclusions: avoid terraform state, lock files, local vars, tests, caches
-          echo "Purging local state, tests, and temporary files from Nandi-Server..."
-          rm -rf "${SERVER_DIR}/terraform/.terraform" 2>/dev/null || true
-          rm -f "${SERVER_DIR}/terraform/.terraform.lock.hcl" 2>/dev/null || true
-          rm -f "${SERVER_DIR}/terraform"/*.tfstate* 2>/dev/null || true
-          rm -f "${SERVER_DIR}/terraform/terraform.tfvars" 2>/dev/null || true
-          rm -f "${SERVER_DIR}/terraform/generated_model_armor_template.json" 2>/dev/null || true
-          rm -f "${SERVER_DIR}/generated_model_armor_template.json" 2>/dev/null || true
-          find "${SERVER_DIR}" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
-          find "${SERVER_DIR}" -name "*.pyc" -delete 2>/dev/null || true
-          find "${SERVER_DIR}" -name ".DS_Store" -delete 2>/dev/null || true
+          cat << 'SUBEOF' > "${SERVER_LINUX}/QUICKSTART.md"
+          # Nandi-Server (Linux) Quickstart
 
-          # Create standalone Quickstart Guide for server users
-          cat << 'SUBEOF' > "${SERVER_DIR}/QUICKSTART.md"
-          # Nandi-Server (Google Cloud Infrastructure) Quickstart
-
-          This package contains the automated provisioning scripts and Terraform templates to deploy Google Cloud Model Armor, Cloud DLP inspection, and 7-year regulatory audit log buckets for Indian FSI compliance.
+          This package contains automated provisioning scripts and Terraform templates for Linux.
 
           ## Prerequisites
-          - Google Cloud SDK (`gcloud` CLI) authenticated with project owner/editor privileges:
+          - Google Cloud SDK (`gcloud` CLI) authenticated:
             ```bash
             gcloud auth login
             gcloud auth application-default login
             ```
-          - A Google Cloud Project (e.g. in `asia-south1` Mumbai).
 
-          ## Deployment Options
+          ## Deployment
 
-          ### Option A: Automated Provisioning Script (Quickest & Recommended)
-          Run the end-to-end setup script to enable APIs, configure IAM roles, deploy the Model Armor template, and run live verification:
           ```bash
+          tar -xzf nandi-server-linux.tar.gz
+          cd nandi-server
+          ./bin/setup-model-armor.sh --project-id YOUR_GCP_PROJECT_ID --region asia-south1
+          ```
+          SUBEOF
+
+          # --------------------------------------------------------------------
+          # 2.2 Darwin / macOS Server
+          # --------------------------------------------------------------------
+          SERVER_DARWIN="staging/darwin/nandi-server"
+          stage_server_base "${SERVER_DARWIN}"
+          mkdir -p "${SERVER_DARWIN}/bin"
+          cp -p GCP/bin/setup-model-armor.sh "${SERVER_DARWIN}/bin/"
+          chmod +x "${SERVER_DARWIN}/bin/setup-model-armor.sh"
+
+          cat << 'SUBEOF' > "${SERVER_DARWIN}/QUICKSTART.md"
+          # Nandi-Server (macOS / Darwin) Quickstart
+
+          This package contains automated provisioning scripts and Terraform templates for macOS.
+
+          ## Prerequisites
+          - Google Cloud SDK (`gcloud` CLI) authenticated:
+            ```bash
+            gcloud auth login
+            gcloud auth application-default login
+            ```
+
+          ## Deployment
+
+          ```bash
+          tar -xzf nandi-server-darwin.tar.gz
+          cd nandi-server
+          ./bin/setup-model-armor.sh --project-id YOUR_GCP_PROJECT_ID --region asia-south1
+          ```
+          SUBEOF
+
+          # --------------------------------------------------------------------
+          # 2.3 Windows Server
+          # --------------------------------------------------------------------
+          SERVER_WINDOWS="staging/windows/nandi-server"
+          stage_server_base "${SERVER_WINDOWS}"
+          mkdir -p "${SERVER_WINDOWS}/bin"
+          cp -p GCP/bin/setup-model-armor.ps1 "${SERVER_WINDOWS}/bin/"
+          cp -p GCP/bin/setup-model-armor.cmd "${SERVER_WINDOWS}/bin/"
+          cp -p GCP/bin/setup-model-armor.bat "${SERVER_WINDOWS}/bin/"
+          cp -p GCP/bin/setup-model-armor.sh "${SERVER_WINDOWS}/bin/"
+
+          cat << 'SUBEOF' > "${SERVER_WINDOWS}/QUICKSTART.md"
+          # Nandi-Server (Windows) Quickstart
+
+          This package contains automated provisioning scripts and Terraform templates for Windows.
+
+          ## Prerequisites
+          - Google Cloud SDK (`gcloud` CLI) authenticated:
+            ```powershell
+            gcloud auth login
+            gcloud auth application-default login
+            ```
+
+          ## Deployment
+
+          Extract and deploy via PowerShell (Recommended):
+          ```powershell
+          tar -xzf nandi-server-windows.tar.gz
+          cd nandi-server
+          .\bin\setup-model-armor.ps1 -ProjectId YOUR_GCP_PROJECT_ID -Region asia-south1
+          ```
+
+          Or via Windows Command Prompt (CMD):
+          ```cmd
+          .\bin\setup-model-armor.cmd --project-id YOUR_GCP_PROJECT_ID --region asia-south1
+          ```
+          SUBEOF
+
+          # --------------------------------------------------------------------
+          # 2.4 Universal Server
+          # --------------------------------------------------------------------
+          SERVER_UNIVERSAL="staging/universal/nandi-server"
+          stage_server_base "${SERVER_UNIVERSAL}"
+          mkdir -p "${SERVER_UNIVERSAL}/bin"
+          cp -p GCP/bin/setup-model-armor.sh "${SERVER_UNIVERSAL}/bin/"
+          cp -p GCP/bin/setup-model-armor.ps1 "${SERVER_UNIVERSAL}/bin/"
+          cp -p GCP/bin/setup-model-armor.cmd "${SERVER_UNIVERSAL}/bin/"
+          cp -p GCP/bin/setup-model-armor.bat "${SERVER_UNIVERSAL}/bin/"
+          chmod +x "${SERVER_UNIVERSAL}/bin/setup-model-armor.sh"
+
+          cat << 'SUBEOF' > "${SERVER_UNIVERSAL}/QUICKSTART.md"
+          # Nandi-Server Multi-Platform Quickstart
+
+          This package contains automated provisioning scripts and Terraform templates across Linux, macOS, and Windows.
+
+          ## Deployment
+
+          ### Linux & macOS:
+          ```bash
+          tar -xzf nandi-server.tar.gz
+          cd nandi-server
           ./bin/setup-model-armor.sh --project-id YOUR_GCP_PROJECT_ID --region asia-south1
           ```
 
-          ### Option B: Terraform Deployment
-          Deploy via standard Infrastructure-as-Code (automatically generates template JSON at apply time):
-          ```bash
-          cd terraform
-          cp terraform.tfvars.example terraform.tfvars
-          # Edit terraform.tfvars and specify your project_id, region, and admin identity
-          terraform init
-          terraform plan
-          terraform apply
+          ### Windows (PowerShell):
+          ```powershell
+          tar -xzf nandi-server.tar.gz
+          cd nandi-server
+          .\bin\setup-model-armor.ps1 -ProjectId YOUR_GCP_PROJECT_ID -Region asia-south1
           ```
 
-          ### Option C: Direct REST API (cURL)
-          Refer to `MODEL_ARMOR_SETUP.md` for REST API endpoint specifications and payload schemas.
+          ### Windows (Command Prompt):
+          ```cmd
+          .\bin\setup-model-armor.cmd --project-id YOUR_GCP_PROJECT_ID --region asia-south1
+          ```
           SUBEOF
 
       - name: Archive Nandi-Server Packages
         run: |
-          cd staging
-          tar -czf ../dist/nandi-server.tar.gz nandi-server
-          zip -rq ../dist/nandi-server.zip nandi-server
-          cd ..
-          echo "Nandi-Server packaged successfully:"
-          ls -lh dist/nandi-server.*
+          # Linux
+          tar -czf dist/nandi-server-linux.tar.gz -C staging/linux nandi-server
+          (cd staging/linux && zip -rq ../../dist/nandi-server-linux.zip nandi-server)
+
+          # Darwin / macOS
+          tar -czf dist/nandi-server-darwin.tar.gz -C staging/darwin nandi-server
+          (cd staging/darwin && zip -rq ../../dist/nandi-server-darwin.zip nandi-server)
+          cp -p dist/nandi-server-darwin.tar.gz dist/nandi-server-macos.tar.gz
+          cp -p dist/nandi-server-darwin.zip dist/nandi-server-macos.zip
+
+          # Windows
+          tar -czf dist/nandi-server-windows.tar.gz -C staging/windows nandi-server
+          (cd staging/windows && zip -rq ../../dist/nandi-server-windows.zip nandi-server)
+
+          # Universal
+          tar -czf dist/nandi-server.tar.gz -C staging/universal nandi-server
+          (cd staging/universal && zip -rq ../../dist/nandi-server.zip nandi-server)
+
+          echo "Nandi-Server packages staged successfully:"
+          ls -lh dist/nandi-server*
 
       # ========================================================================
       # 3. Generate Cryptographic Checksums
@@ -219,28 +490,68 @@ jobs:
       - name: Compute Checksums
         run: |
           cd dist
-          sha256sum nandi-client.tar.gz nandi-client.zip nandi-server.tar.gz nandi-server.zip > SHA256SUMS.txt
+          sha256sum * > SHA256SUMS.txt
           cat SHA256SUMS.txt
 
       # ========================================================================
       # 4. Upload GitHub Actions Artifacts (Downloadable from Summary Tab)
       # ========================================================================
-      - name: Upload Nandi-Client Artifact
+      - name: Upload Nandi-Client Linux Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: nandi-client
+          name: nandi-client-linux
           path: |
-            dist/nandi-client.tar.gz
-            dist/nandi-client.zip
+            dist/nandi-client-linux.tar.gz
+            dist/nandi-client-linux.zip
           retention-days: 90
 
-      - name: Upload Nandi-Server Artifact
+      - name: Upload Nandi-Client Darwin Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: nandi-server
+          name: nandi-client-darwin
           path: |
-            dist/nandi-server.tar.gz
-            dist/nandi-server.zip
+            dist/nandi-client-darwin.tar.gz
+            dist/nandi-client-darwin.zip
+            dist/nandi-client-macos.tar.gz
+            dist/nandi-client-macos.zip
+          retention-days: 90
+
+      - name: Upload Nandi-Client Windows Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nandi-client-windows
+          path: |
+            dist/nandi-client-windows.tar.gz
+            dist/nandi-client-windows.zip
+          retention-days: 90
+
+      - name: Upload Nandi-Server Linux Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nandi-server-linux
+          path: |
+            dist/nandi-server-linux.tar.gz
+            dist/nandi-server-linux.zip
+          retention-days: 90
+
+      - name: Upload Nandi-Server Darwin Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nandi-server-darwin
+          path: |
+            dist/nandi-server-darwin.tar.gz
+            dist/nandi-server-darwin.zip
+            dist/nandi-server-macos.tar.gz
+            dist/nandi-server-macos.zip
+          retention-days: 90
+
+      - name: Upload Nandi-Server Windows Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nandi-server-windows
+          path: |
+            dist/nandi-server-windows.tar.gz
+            dist/nandi-server-windows.zip
           retention-days: 90
 
       - name: Upload All Release Assets Artifact
@@ -269,47 +580,34 @@ jobs:
 
             **Enterprise Governance, Risk, and Compliance (GRC) & Security Guard for Google Antigravity**
 
-            Download the respective package below based on your role:
+            Download the OS-specific package below matching your operating system and role:
 
             ---
 
             ### 📦 Nandi-Client (Antigravity Plugin)
-            *For Developers & Engineers working in Google Antigravity.*
-            Contains all installable components for the Nandi Antigravity Plugin with zero external dependencies.
+            *For Developers & AI Engineers working in Google Antigravity.*
 
-            * **Download:**
-              * `nandi-client.tar.gz`
-              * `nandi-client.zip`
-            * **Quick Install:**
-              ```bash
-              tar -xzf nandi-client.tar.gz
-              cd nandi-client
-              ./bin/install-nandi.sh --project-id YOUR_GCP_PROJECT_ID
-              ```
+            | Platform | Download | Quick Install |
+            | :--- | :--- | :--- |
+            | 🐧 **Linux** | [`nandi-client-linux.tar.gz`](download/nandi-client-linux.tar.gz) · [`zip`](download/nandi-client-linux.zip) | `tar -xzf nandi-client-linux.tar.gz && cd nandi-client && ./bin/install-nandi.sh --project-id <PROJECT_ID>` |
+            | 🍎 **macOS** | [`nandi-client-darwin.tar.gz`](download/nandi-client-darwin.tar.gz) · [`zip`](download/nandi-client-darwin.zip) | `tar -xzf nandi-client-darwin.tar.gz && cd nandi-client && ./bin/install-nandi.sh --project-id <PROJECT_ID>` |
+            | 🪟 **Windows** | [`nandi-client-windows.tar.gz`](download/nandi-client-windows.tar.gz) · [`zip`](download/nandi-client-windows.zip) | `tar -xzf nandi-client-windows.tar.gz && cd nandi-client && .\bin\install-nandi.ps1 -ProjectId <PROJECT_ID>` |
+            | 🌐 **Universal** | [`nandi-client.tar.gz`](download/nandi-client.tar.gz) · [`zip`](download/nandi-client.zip) | Multi-platform fallback archive |
 
             ---
 
             ### 🛡️ Nandi-Server (GCP Infrastructure & Model Armor)
             *For Cloud Architects, DevOps & SecOps Teams.*
-            Contains the Terraform templates, REST payloads, and automated provisioning scripts to configure Google Cloud Model Armor, Cloud DLP, 7-year regulatory audit buckets, and IAM roles.
 
-            * **Download:**
-              * `nandi-server.tar.gz`
-              * `nandi-server.zip`
-            * **Quick Deploy:**
-              ```bash
-              tar -xzf nandi-server.tar.gz
-              cd nandi-server
-              ./bin/setup-model-armor.sh --project-id YOUR_GCP_PROJECT_ID --region asia-south1
-              ```
+            | Platform | Download | Quick Deploy |
+            | :--- | :--- | :--- |
+            | 🐧 **Linux** | [`nandi-server-linux.tar.gz`](download/nandi-server-linux.tar.gz) · [`zip`](download/nandi-server-linux.zip) | `tar -xzf nandi-server-linux.tar.gz && cd nandi-server && ./bin/setup-model-armor.sh --project-id <PROJECT_ID>` |
+            | 🍎 **macOS** | [`nandi-server-darwin.tar.gz`](download/nandi-server-darwin.tar.gz) · [`zip`](download/nandi-server-darwin.zip) | `tar -xzf nandi-server-darwin.tar.gz && cd nandi-server && ./bin/setup-model-armor.sh --project-id <PROJECT_ID>` |
+            | 🪟 **Windows** | [`nandi-server-windows.tar.gz`](download/nandi-server-windows.tar.gz) · [`zip`](download/nandi-server-windows.zip) | `tar -xzf nandi-server-windows.tar.gz && cd nandi-server && .\bin\setup-model-armor.ps1 -ProjectId <PROJECT_ID>` |
+            | 🌐 **Universal** | [`nandi-server.tar.gz`](download/nandi-server.tar.gz) · [`zip`](download/nandi-server.zip) | Multi-platform fallback archive |
 
             ---
 
             ### 🔒 Integrity Checksums (SHA-256)
             Refer to the attached `SHA256SUMS.txt` to verify archive integrity.
-          files: |
-            dist/nandi-client.tar.gz
-            dist/nandi-client.zip
-            dist/nandi-server.tar.gz
-            dist/nandi-server.zip
-            dist/SHA256SUMS.txt
+          files: dist/*
