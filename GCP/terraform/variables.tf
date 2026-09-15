@@ -18,19 +18,43 @@ variable "region" {
 variable "template_id" {
   type        = string
   description = "Unique resource identifier for the Model Armor safety template."
-  default     = "fsi-india-compliance-template"
+  default     = "Nandi-compliance-template"
 }
 
 variable "template_display_name" {
   type        = string
   description = "Human-readable display name for the Model Armor template."
-  default     = "India FSI Governance & Safety Template"
+  default     = "Nandi-compliance-template"
 }
 
 variable "service_account_id" {
   type        = string
   description = "Account ID for the dedicated Antigravity Agent Service Account."
   default     = "antigravity-fsi-guard-sa"
+}
+
+variable "enable_prompt_response_logging" {
+  type        = bool
+  description = "Enable logging of user prompts and model responses during sanitize operations."
+  default     = true
+}
+
+variable "enable_template_operations_logging" {
+  type        = bool
+  description = "Enable logging of template CRUD operations."
+  default     = true
+}
+
+variable "enable_basic_sdp" {
+  type        = bool
+  description = "Enable Basic Sensitive Data Protection (predefined infoTypes) filter in Model Armor."
+  default     = true
+}
+
+variable "filter_version_alias" {
+  type        = string
+  description = "Filter version selector alias for Model Armor (e.g. FILTER_VERSION_ALIAS_STABLE)."
+  default     = "FILTER_VERSION_ALIAS_STABLE"
 }
 
 variable "pi_jb_enforcement" {
@@ -60,13 +84,13 @@ variable "rai_harassment_confidence" {
 variable "rai_sexual_content_confidence" {
   type        = string
   description = "Threshold for Responsible AI Sexually Explicit content filter."
-  default     = "LOW_AND_ABOVE"
+  default     = "MEDIUM_AND_ABOVE"
 }
 
 variable "rai_dangerous_content_confidence" {
   type        = string
   description = "Threshold for Responsible AI Dangerous Content filter."
-  default     = "LOW_AND_ABOVE"
+  default     = "MEDIUM_AND_ABOVE"
 }
 
 variable "enable_malicious_uri_filter" {

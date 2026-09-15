@@ -137,7 +137,7 @@ class TestHooks(unittest.TestCase):
         self.assertEqual(res.get("decision"), "allow")
 
     def test_model_armor_hook_fail_closed_without_auth(self):
-        # Test PreInvocation fail-closed block when authentication/Model Armor call is not made
+        # Test PreInvocation deterministic fail-closed block when authentication/Model Armor call is not made
         pre_inv_payload = {
             "conversationId": "test-hook-005",
             "prompt": "Explain retail credit risk models."
@@ -150,11 +150,48 @@ class TestHooks(unittest.TestCase):
                 "GOOGLE_OAUTH_ACCESS_TOKEN": "",
                 "GCP_ACCESS_TOKEN": "",
             },
-            expect_exit_code=1,
+            expect_exit_code=0,
         )
-        self.assertEqual(res.get("returncode"), 1)
-        self.assertIn("Fail-Closed Policy", res.get("stderr", ""))
-        self.assertIn("Prompt blocked from propagating to backend model", res.get("stderr", ""))
+        self.assertIn("injectSteps", res)
+        self.assertTrue(len(res["injectSteps"]) >= 1)
+        # Verify ephemeralMessage and systemMessage refusal directives
+        ephemeral = res["injectSteps"][0].get("ephemeralMessage", "")
+        self.assertIn("Security Policy Violation Detected", ephemeral)
+        system_msg = res["injectSteps"][1].get("systemMessage", {}).get("systemMessage", "")
+        self.assertIn("CRITICAL SECURITY POLICY OVERRIDE", system_msg)
+
+    def test_post_invocation_termination_when_blocked(self):
+        # Ensure turn is marked as blocked first
+        from src.hooks.hook_base import AntigravityHookBase
+        hook = AntigravityHookBase(hook_name="test")
+        hook.conversation_id = "test-hook-post-term"
+        hook.mark_turn_blocked("Adversarial attack detected")
+
+        payload = {
+            "conversationId": "test-hook-post-term",
+            "invocationNum": 1,
+            "initialNumSteps": 5,
+        }
+        res = self._invoke_hook("src/hooks/model_armor_hook.py", payload)
+        self.assertEqual(res.get("terminationBehavior"), "terminate")
+
+    def test_pre_tool_use_gate_denies_when_turn_blocked(self):
+        from src.hooks.hook_base import AntigravityHookBase
+        hook = AntigravityHookBase(hook_name="test")
+        hook.conversation_id = "test-hook-tool-gate"
+        hook.mark_turn_blocked("Sensitive PII detected")
+
+        payload = {
+            "conversationId": "test-hook-tool-gate",
+            "stepIdx": 2,
+            "toolCall": {
+                "name": "run_command",
+                "args": {"CommandLine": "ls -la"}
+            }
+        }
+        res = self._invoke_hook("src/hooks/model_armor_hook.py", payload)
+        self.assertEqual(res.get("decision"), "deny")
+        self.assertIn("Execution denied: Turn flagged for security policy violation", res.get("reason", ""))
 
 
 if __name__ == "__main__":

@@ -12,7 +12,10 @@
 nandi/
 ├── AGY-Plugin/                 # Antigravity IDE plugin (Installed into IDE)
 │   ├── bin/                    # Plugin installer automation
-│   │   └── install-nandi.sh    # 5-step hermetic installer (installs AGY-Plugin/ into IDE)
+│   │   ├── install-nandi.sh    # 5-step installer (Linux / macOS)
+│   │   ├── install-nandi.ps1   # 5-step installer (Windows PowerShell)
+│   │   ├── install-nandi.cmd   # Windows CMD launcher
+│   │   └── install-nandi.bat   # Windows Command Prompt launcher
 │   ├── plugin.json             # Antigravity plugin manifest
 │   ├── hooks.json              # Lifecycle hook bindings (PreInvocation, PreToolUse)
 │   ├── config/                 # PII regex patterns, Model Armor thresholds, RBI/SEBI policies
@@ -31,12 +34,15 @@ nandi/
 │       ├── model_armor/        # Model Armor REST client and policy evaluator
 │       └── pii_guard/          # Regex & Checksum PII engine (Verhoeff, Luhn, Mod 36)
 ├── GCP/                        # Server infrastructure (External to IDE plugin)
-│   ├── bin/                    # Setup automation (setup-model-armor.sh)
+│   ├── bin/                    # Setup automation
+│   │   ├── setup-model-armor.sh   # Automated setup (Linux / macOS)
+│   │   ├── setup-model-armor.ps1  # Automated setup (Windows PowerShell)
+│   │   ├── setup-model-armor.cmd  # Windows CMD launcher
+│   │   └── setup-model-armor.bat  # Windows Command Prompt launcher
 │   ├── terraform/              # Production Terraform templates (Model Armor, DLP, Logging)
 │   ├── generated_model_armor_template.json # Standalone REST API payload
-│   ├── MODEL_ARMOR_SETUP.md    # GCP deployment and IAM guide
-│   └── README.md               # GCP infrastructure operations
-├── tests/                      # 31 automated unit and end-to-end test suites
+│   └── MODEL_ARMOR_SETUP.md    # GCP deployment and IAM guide
+├── tests/                      # 40 automated unit and end-to-end test suites
 └── docs/                       # Complete compliance & architectural documentation
 ```
 

@@ -131,7 +131,7 @@ class TestModelArmor(unittest.TestCase):
         mock_response = MagicMock()
         mock_response.status = 200
         template_payload = {
-            "name": "projects/test-fsi-project/locations/asia-south1/templates/fsi-india-compliance-template",
+            "name": "projects/test-fsi-project/locations/asia-south1/templates/Nandi-compliance-template",
             "filterConfig": {
                 "piAndJailbreakFilterConfig": {"filterEnforcement": "ENFORCE", "confidenceLevel": "LOW_AND_ABOVE"},
                 "raiFilterConfig": {
@@ -157,7 +157,7 @@ class TestModelArmor(unittest.TestCase):
             code=404,
             msg="Not Found",
             hdrs={},
-            fp=MagicMock(read=lambda: b'{"error": "Template fsi-india-compliance-template not found"}')
+            fp=MagicMock(read=lambda: b'{"error": "Template Nandi-compliance-template not found"}')
         )
         res = self.client.get_template()
         self.assertFalse(res["success"])
