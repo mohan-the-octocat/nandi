@@ -9,9 +9,9 @@ on:
   workflow_dispatch:
     inputs:
       tag_name:
-        description: 'Release Tag (e.g. v1.0.1)'
+        description: 'Release Tag (e.g. v1.1.0)'
         required: false
-        default: 'v1.0.1'
+        default: 'v1.1.0'
       draft:
         description: 'Publish as Draft Release'
         type: boolean
@@ -43,7 +43,7 @@ jobs:
           elif [[ -n "${{ inputs.tag_name }}" ]]; then
             VERSION="${{ inputs.tag_name }}"
           else
-            VERSION="v1.0.1-$(date +'%Y%m%d%H%M%S')"
+            VERSION="v1.1.0-$(date +'%Y%m%d%H%M%S')"
           fi
           echo "VERSION=${VERSION}" >> "$GITHUB_OUTPUT"
           echo "Building packages for release version: ${VERSION}"
@@ -589,10 +589,10 @@ jobs:
 
             | Platform | Download | Quick Install |
             | :--- | :--- | :--- |
-            | 🐧 **Linux** | [`nandi-client-linux.tar.gz`](download/nandi-client-linux.tar.gz) · [`zip`](download/nandi-client-linux.zip) | `tar -xzf nandi-client-linux.tar.gz && cd nandi-client && ./bin/install-nandi.sh --project-id <PROJECT_ID>` |
-            | 🍎 **macOS** | [`nandi-client-darwin.tar.gz`](download/nandi-client-darwin.tar.gz) · [`zip`](download/nandi-client-darwin.zip) | `tar -xzf nandi-client-darwin.tar.gz && cd nandi-client && ./bin/install-nandi.sh --project-id <PROJECT_ID>` |
-            | 🪟 **Windows** | [`nandi-client-windows.tar.gz`](download/nandi-client-windows.tar.gz) · [`zip`](download/nandi-client-windows.zip) | `tar -xzf nandi-client-windows.tar.gz && cd nandi-client && .\bin\install-nandi.ps1 -ProjectId <PROJECT_ID>` |
-            | 🌐 **Universal** | [`nandi-client.tar.gz`](download/nandi-client.tar.gz) · [`zip`](download/nandi-client.zip) | Multi-platform fallback archive |
+            | 🐧 **Linux** | [`nandi-client-linux.tar.gz`](https://github.com/${{ github.repository }}/releases/download/${{ steps.vars.outputs.VERSION }}/nandi-client-linux.tar.gz) · [`zip`](https://github.com/${{ github.repository }}/releases/download/${{ steps.vars.outputs.VERSION }}/nandi-client-linux.zip) | `tar -xzf nandi-client-linux.tar.gz && cd nandi-client && ./bin/install-nandi.sh --project-id <PROJECT_ID>` |
+            | 🍎 **macOS** | [`nandi-client-darwin.tar.gz`](https://github.com/${{ github.repository }}/releases/download/${{ steps.vars.outputs.VERSION }}/nandi-client-darwin.tar.gz) · [`zip`](https://github.com/${{ github.repository }}/releases/download/${{ steps.vars.outputs.VERSION }}/nandi-client-darwin.zip) | `tar -xzf nandi-client-darwin.tar.gz && cd nandi-client && ./bin/install-nandi.sh --project-id <PROJECT_ID>` |
+            | 🪟 **Windows** | [`nandi-client-windows.tar.gz`](https://github.com/${{ github.repository }}/releases/download/${{ steps.vars.outputs.VERSION }}/nandi-client-windows.tar.gz) · [`zip`](https://github.com/${{ github.repository }}/releases/download/${{ steps.vars.outputs.VERSION }}/nandi-client-windows.zip) | `tar -xzf nandi-client-windows.tar.gz && cd nandi-client && .\bin\install-nandi.ps1 -ProjectId <PROJECT_ID>` |
+            | 🌐 **Universal** | [`nandi-client.tar.gz`](https://github.com/${{ github.repository }}/releases/download/${{ steps.vars.outputs.VERSION }}/nandi-client.tar.gz) · [`zip`](https://github.com/${{ github.repository }}/releases/download/${{ steps.vars.outputs.VERSION }}/nandi-client.zip) | Multi-platform fallback archive |
 
             ---
 
@@ -601,10 +601,10 @@ jobs:
 
             | Platform | Download | Quick Deploy |
             | :--- | :--- | :--- |
-            | 🐧 **Linux** | [`nandi-server-linux.tar.gz`](download/nandi-server-linux.tar.gz) · [`zip`](download/nandi-server-linux.zip) | `tar -xzf nandi-server-linux.tar.gz && cd nandi-server && ./bin/setup-model-armor.sh --project-id <PROJECT_ID>` |
-            | 🍎 **macOS** | [`nandi-server-darwin.tar.gz`](download/nandi-server-darwin.tar.gz) · [`zip`](download/nandi-server-darwin.zip) | `tar -xzf nandi-server-darwin.tar.gz && cd nandi-server && ./bin/setup-model-armor.sh --project-id <PROJECT_ID>` |
-            | 🪟 **Windows** | [`nandi-server-windows.tar.gz`](download/nandi-server-windows.tar.gz) · [`zip`](download/nandi-server-windows.zip) | `tar -xzf nandi-server-windows.tar.gz && cd nandi-server && .\bin\setup-model-armor.ps1 -ProjectId <PROJECT_ID>` |
-            | 🌐 **Universal** | [`nandi-server.tar.gz`](download/nandi-server.tar.gz) · [`zip`](download/nandi-server.zip) | Multi-platform fallback archive |
+            | 🐧 **Linux** | [`nandi-server-linux.tar.gz`](https://github.com/${{ github.repository }}/releases/download/${{ steps.vars.outputs.VERSION }}/nandi-server-linux.tar.gz) · [`zip`](https://github.com/${{ github.repository }}/releases/download/${{ steps.vars.outputs.VERSION }}/nandi-server-linux.zip) | `tar -xzf nandi-server-linux.tar.gz && cd nandi-server && ./bin/setup-model-armor.sh --project-id <PROJECT_ID>` |
+            | 🍎 **macOS** | [`nandi-server-darwin.tar.gz`](https://github.com/${{ github.repository }}/releases/download/${{ steps.vars.outputs.VERSION }}/nandi-server-darwin.tar.gz) · [`zip`](https://github.com/${{ github.repository }}/releases/download/${{ steps.vars.outputs.VERSION }}/nandi-server-darwin.zip) | `tar -xzf nandi-server-darwin.tar.gz && cd nandi-server && ./bin/setup-model-armor.sh --project-id <PROJECT_ID>` |
+            | 🪟 **Windows** | [`nandi-server-windows.tar.gz`](https://github.com/${{ github.repository }}/releases/download/${{ steps.vars.outputs.VERSION }}/nandi-server-windows.tar.gz) · [`zip`](https://github.com/${{ github.repository }}/releases/download/${{ steps.vars.outputs.VERSION }}/nandi-server-windows.zip) | `tar -xzf nandi-server-windows.tar.gz && cd nandi-server && .\bin\setup-model-armor.ps1 -ProjectId <PROJECT_ID>` |
+            | 🌐 **Universal** | [`nandi-server.tar.gz`](https://github.com/${{ github.repository }}/releases/download/${{ steps.vars.outputs.VERSION }}/nandi-server.tar.gz) · [`zip`](https://github.com/${{ github.repository }}/releases/download/${{ steps.vars.outputs.VERSION }}/nandi-server.zip) | Multi-platform fallback archive |
 
             ---
 

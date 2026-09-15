@@ -2,7 +2,7 @@
 # Designed for Indian Financial Services Institutions under RBI & SEBI Governance
 
 plugin_name: "nandi"
-version: "1.1.0-beta.2"
+version: "1.1.0"
 description: "Enterprise GRC & Security Guard Plugin for Antigravity"
 environment: "production" # development, staging, production
 
@@ -30,7 +30,7 @@ pii_guard:
 model_armor:
   enabled: true
   action_on_match: "BLOCK" # BLOCK, FORCE_ASK, WARN
-  project_id: "nandi-test-project-2"
+  project_id: "YOUR_GCP_PROJECT_ID"
   location: "asia-south1" # asia-south1 (Mumbai, India) for domestic data residency
   template_id: "Nandi-compliance-template"
   endpoint: "modelarmor.asia-south1.rep.googleapis.com" # Regional REP endpoint
