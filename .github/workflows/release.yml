@@ -48,6 +48,18 @@ jobs:
           echo "VERSION=${VERSION}" >> "$GITHUB_OUTPUT"
           echo "Building packages for release version: ${VERSION}"
 
+          # A SemVer pre-release suffix (-beta.1, -experimental.1, -rc.1, ...) must
+          # publish as a GitHub pre-release. Without this, a tag push would land as
+          # "Latest" and displace the current stable release on the repository page.
+          # The manual-dispatch input can still force pre-release for a clean tag.
+          if [[ "${{ inputs.prerelease }}" == "true" || "${VERSION}" == *-* ]]; then
+            PRERELEASE=true
+          else
+            PRERELEASE=false
+          fi
+          echo "PRERELEASE=${PRERELEASE}" >> "$GITHUB_OUTPUT"
+          echo "Publishing as pre-release: ${PRERELEASE}"
+
       - name: Create Staging Directories
         run: |
           mkdir -p staging/linux
@@ -573,7 +585,7 @@ jobs:
           tag_name: ${{ steps.vars.outputs.VERSION }}
           name: Nandi Release ${{ steps.vars.outputs.VERSION }}
           draft: ${{ inputs.draft || false }}
-          prerelease: ${{ inputs.prerelease || false }}
+          prerelease: ${{ steps.vars.outputs.PRERELEASE }}
           generate_release_notes: true
           body: |
             # Nandi Release ${{ steps.vars.outputs.VERSION }}
