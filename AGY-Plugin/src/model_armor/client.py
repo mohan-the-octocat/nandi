@@ -26,20 +26,6 @@ FAILURE_UNREACHABLE = "UNREACHABLE"
 FAILURE_API_ERROR = "API_ERROR"
 
 REMEDIATION_BY_CATEGORY: Dict[str, str] = {
-    FAILURE_AUTH_MISSING: (
-        "No Google Cloud credential could be found. Ensure your credential refresh "
-        "agent is running, or run 'gcloud auth application-default login'."
-    ),
-    FAILURE_AUTH_STALE: (
-        "Your local Google Cloud credential has expired. Reconnect to the corporate "
-        "network/VPN so the credential refresh agent can renew it, or run "
-        "'gcloud auth application-default login'."
-    ),
-    FAILURE_AUTH_REJECTED: (
-        "Google Cloud rejected the local credential (HTTP 401) even after refresh. "
-        "Re-authenticate via your corporate SSO, or run "
-        "'gcloud auth application-default login'."
-    ),
     FAILURE_PERMISSION_DENIED: (
         "The authenticated identity lacks Model Armor permissions on this project. "
         "Ask your GCP administrator for roles/modelarmor.user."
@@ -58,6 +44,46 @@ REMEDIATION_BY_CATEGORY: Dict[str, str] = {
     ),
 }
 
+# Auth remediation depends on how the machine was provisioned.
+#
+# Nandi does NOT ship a credential refresh agent. A managed fleet may supply one
+# that publishes a token to GCP_ACCESS_TOKEN_FILE, but that is a component the
+# deploying organisation builds. Telling a standard gcloud/ADC user to wait for
+# an agent that does not exist on their machine would send them nowhere, so the
+# advice is selected from whichever credential source is actually configured.
+_AUTH_REMEDIATION_STANDARD: Dict[str, str] = {
+    FAILURE_AUTH_MISSING: (
+        "No Google Cloud credential was found. Run "
+        "'gcloud auth application-default login'."
+    ),
+    FAILURE_AUTH_STALE: (
+        "Your Google Cloud credential has expired. Run "
+        "'gcloud auth application-default login' to renew it."
+    ),
+    FAILURE_AUTH_REJECTED: (
+        "Google Cloud rejected the credential (HTTP 401). Run "
+        "'gcloud auth application-default login' to re-authenticate."
+    ),
+}
+
+_AUTH_REMEDIATION_MANAGED: Dict[str, str] = {
+    FAILURE_AUTH_MISSING: (
+        "No credential was found at the configured GCP_ACCESS_TOKEN_FILE. Check "
+        "that your organisation's credential provisioning is running, or run "
+        "'gcloud auth application-default login'."
+    ),
+    FAILURE_AUTH_STALE: (
+        "The credential at the configured GCP_ACCESS_TOKEN_FILE has expired. "
+        "Reconnect to the corporate network/VPN so it can be renewed, or run "
+        "'gcloud auth application-default login'."
+    ),
+    FAILURE_AUTH_REJECTED: (
+        "Google Cloud rejected the credential at the configured "
+        "GCP_ACCESS_TOKEN_FILE (HTTP 401). Reconnect to the corporate "
+        "network/VPN, or run 'gcloud auth application-default login'."
+    ),
+}
+
 # A bare access token file carries no expiry, so its age is bounded by the standard
 # Google OAuth2 access token lifetime. Anything older is presumed dead.
 DEFAULT_TOKEN_FILE_MAX_AGE_SECONDS = 3600.0
@@ -67,8 +93,19 @@ DEFAULT_TOKEN_FILE_MAX_AGE_SECONDS = 3600.0
 DEFAULT_TOKEN_EXPIRY_MARGIN_SECONDS = 300.0
 
 
-def _remediation_for(category: Optional[str]) -> str:
+def _remediation_for(category: Optional[str], managed_token_file: Optional[bool] = None) -> str:
+    """Returns actionable remediation text for a failure category.
+
+    For auth failures the advice depends on whether this machine is provisioned
+    with an externally-managed credential file; otherwise it points at gcloud.
+    """
+    if category in _AUTH_REMEDIATION_STANDARD:
+        if managed_token_file is None:
+            managed_token_file = bool(os.environ.get("GCP_ACCESS_TOKEN_FILE"))
+        table = _AUTH_REMEDIATION_MANAGED if managed_token_file else _AUTH_REMEDIATION_STANDARD
+        return table[category]
     return REMEDIATION_BY_CATEGORY.get(category or "", REMEDIATION_BY_CATEGORY[FAILURE_API_ERROR])
+
 
 
 @dataclasses.dataclass

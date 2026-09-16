@@ -24,6 +24,7 @@ from src.model_armor.client import (
     FAILURE_UNREACHABLE,
     ModelArmorClient,
     ModelArmorResponse,
+    _remediation_for,
 )
 from src.model_armor.policy_evaluator import ModelArmorPolicyEvaluator
 
@@ -446,7 +447,39 @@ class TestOfflineTokenResilience(unittest.TestCase):
         self.assertEqual(mock_open.call_count, 1)
         self.assertFalse(resp.success)
         self.assertEqual(resp.failure_category, FAILURE_AUTH_REJECTED)
-        self.assertIn("SSO", resp.remediation)
+        self.assertTrue(resp.remediation)
+
+    # -- Remediation must match how the machine is actually provisioned --------
+
+    def test_remediation_for_default_install_does_not_mention_an_agent(self):
+        """Nandi ships no credential refresh agent.
+
+        A standard gcloud/ADC user must never be told to wait for one, because on
+        their machine no such component exists.
+        """
+        os.environ.pop("GCP_ACCESS_TOKEN_FILE", None)
+        for category in (FAILURE_AUTH_STALE, FAILURE_AUTH_REJECTED):
+            text = _remediation_for(category)
+            self.assertIn("gcloud auth application-default login", text)
+            self.assertNotIn("agent", text.lower())
+            self.assertNotIn("VPN", text)
+
+    def test_remediation_for_managed_token_file_references_provisioning(self):
+        os.environ["GCP_ACCESS_TOKEN_FILE"] = self.token_path
+        text = _remediation_for(FAILURE_AUTH_STALE)
+        self.assertIn("GCP_ACCESS_TOKEN_FILE", text)
+        self.assertIn("VPN", text)
+        # Always retains a self-service fallback the developer can act on alone.
+        self.assertIn("gcloud auth application-default login", text)
+
+    def test_non_auth_remediation_is_unaffected_by_credential_source(self):
+        os.environ["GCP_ACCESS_TOKEN_FILE"] = self.token_path
+        with_file = _remediation_for(FAILURE_PERMISSION_DENIED)
+        os.environ.pop("GCP_ACCESS_TOKEN_FILE", None)
+        without_file = _remediation_for(FAILURE_PERMISSION_DENIED)
+        self.assertEqual(with_file, without_file)
+        self.assertIn("roles/modelarmor.user", with_file)
+
 
     def test_network_failure_is_categorised_as_unreachable(self):
         self._write_token("fake-token")
