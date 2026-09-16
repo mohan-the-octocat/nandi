@@ -143,7 +143,11 @@ class FSIAuditLogger:
             risk_score=risk_score,
             detected_violations=detected_violations or [],
             masked_entities=masked_entities or [],
-            regulatory_frameworks=regulatory_frameworks or ["RBI_MD_IT_2023", "SEBI_CSCRF_2024", "DPDP_ACT_2023"],
+            regulatory_frameworks=(
+                ["RBI_MD_IT_2023", "SEBI_CSCRF_2024", "DPDP_ACT_2023"]
+                if regulatory_frameworks is None
+                else regulatory_frameworks
+            ),
             caller_metadata=caller_metadata or {},
             prev_event_hash=self.last_hash,
         )
@@ -166,3 +170,39 @@ class FSIAuditLogger:
             sys.stderr.flush()
 
         return event
+
+    def log_operational_event(
+        self,
+        hook_name: str,
+        event_type: str,
+        reason: str,
+        conversation_id: str,
+        failure_category: str,
+        step_idx: Optional[int] = None,
+        caller_metadata: Optional[Dict[str, Any]] = None,
+    ) -> AuditEvent:
+        """Records a control-availability incident.
+
+        This is deliberately NOT a compliance violation record. When Model Armor
+        cannot be reached -- expired credential, dropped VPN, API outage -- the
+        prompt is still blocked fail-closed, but the prompt itself was never found
+        to be non-compliant.
+
+        Writing these as RBI/SEBI violations would pollute the 7-year regulatory
+        audit trail with phantom findings, so no regulatory codes are attached and
+        the risk score is zero. The event is still hash-chained, because control
+        downtime is itself auditable.
+        """
+        return self.log_event(
+            hook_name=hook_name,
+            event_type=f"CONTROL_UNAVAILABLE_{event_type}",
+            decision="deny",
+            reason=reason,
+            risk_score=0.0,
+            conversation_id=conversation_id,
+            step_idx=step_idx,
+            detected_violations=[f"ControlUnavailable:{failure_category}"],
+            regulatory_frameworks=[],
+            caller_metadata={**(caller_metadata or {}), "failure_category": failure_category},
+        )
+

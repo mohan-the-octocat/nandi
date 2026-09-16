@@ -2,7 +2,7 @@
 
 import dataclasses
 from enum import Enum
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from src.model_armor.client import ModelArmorResponse
 
@@ -39,6 +39,12 @@ class ModelArmorEvaluationReport:
     rbi_compliance_codes: List[str]
     sebi_compliance_codes: List[str]
     latency_ms: float
+    # True when the prompt was blocked because the control could not run, rather
+    # than because the control examined it and objected. These are different
+    # events and must be recorded on different audit channels.
+    is_infrastructure_failure: bool = False
+    failure_category: Optional[str] = None
+    remediation: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -51,7 +57,11 @@ class ModelArmorEvaluationReport:
             "rbi_compliance_codes": self.rbi_compliance_codes,
             "sebi_compliance_codes": self.sebi_compliance_codes,
             "latency_ms": self.latency_ms,
+            "is_infrastructure_failure": self.is_infrastructure_failure,
+            "failure_category": self.failure_category,
+            "remediation": self.remediation,
         }
+
 
 
 class ModelArmorPolicyEvaluator:
@@ -75,26 +85,38 @@ class ModelArmorPolicyEvaluator:
         risk_score = 0.0
 
         if not response.success or response.invocation_result == "FAILURE":
-            err_msg = response.error_message or "Authentication or Model Armor API call failed."
-            violations.append(f"Fail-Closed Security Gate: {err_msg}")
-            rbi_codes.append("RBI-ITG-SEC-01")
-            sebi_codes.append("SEBI-CSCRF-AI-01")
-            risk_score = 1.0
+            # The prompt was never adjudicated. It still fails closed, but this is a
+            # control-availability event, NOT a compliance violation by the prompt.
+            #
+            # Emitting RBI/SEBI violation codes here would inject phantom violations
+            # into the 7-year regulatory audit trail every time a credential expires
+            # or the network drops. Those codes are therefore deliberately withheld,
+            # and the risk score stays at 0.0 because no risk was ever measured.
+            err_msg = response.error_message or "Model Armor could not be reached."
+            category = getattr(response, "failure_category", None) or "API_ERROR"
+            remediation = getattr(response, "remediation", None) or ""
+
+            violations.append(f"ControlUnavailable:{category}")
             reason = (
-                f"Model Armor Security Gate Denied Prompt (Fail-Closed Policy): {err_msg} "
-                f"Prompt blocked from propagating to backend model. Regulatory Mandates Triggered: {', '.join(sorted(set(rbi_codes + sebi_codes)))}."
-            )
+                f"Nandi could not verify this request, so it was blocked "
+                f"(fail-closed policy). Cause: {category}. {remediation}"
+            ).strip()
+
             return ModelArmorEvaluationReport(
                 is_allowed=False,
                 decision="deny",
                 reason=reason,
-                risk_score=1.0,
+                risk_score=0.0,
                 violations_detected=violations,
-                filter_details={},
-                rbi_compliance_codes=sorted(list(set(rbi_codes))),
-                sebi_compliance_codes=sorted(list(set(sebi_codes))),
+                filter_details={"error": err_msg},
+                rbi_compliance_codes=[],
+                sebi_compliance_codes=[],
                 latency_ms=response.latency_ms,
+                is_infrastructure_failure=True,
+                failure_category=category,
+                remediation=remediation,
             )
+
 
         filter_res = response.filter_results or {}
 

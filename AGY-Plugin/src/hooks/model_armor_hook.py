@@ -49,6 +49,21 @@ def main() -> None:
         eval_report = evaluator.evaluate(response)
 
         if not eval_report.is_allowed:
+            if eval_report.is_infrastructure_failure:
+                # Control could not run. Blocked fail-closed, but recorded as an
+                # availability incident rather than a compliance violation.
+                audit_logger.log_operational_event(
+                    hook_name="fsi-model-armor-guard",
+                    event_type="PRE_TOOL_USE",
+                    reason=eval_report.reason,
+                    conversation_id=hook.conversation_id,
+                    failure_category=eval_report.failure_category or "API_ERROR",
+                    step_idx=hook.step_idx,
+                    caller_metadata={"source": source, "tool_name": hook.tool_name, "latency_ms": eval_report.latency_ms},
+                )
+                hook.reply_deny(f"⚠️ [Nandi] {eval_report.reason}")
+                return
+
             audit_logger.log_event(
                 hook_name="fsi-model-armor-guard",
                 event_type="PRE_TOOL_USE",
@@ -68,6 +83,7 @@ def main() -> None:
                 hook.reply_deny(deny_reason)
             return
 
+
         hook.reply_allow(eval_report.reason)
         return
 
@@ -83,6 +99,21 @@ def main() -> None:
     eval_report = evaluator.evaluate(response)
 
     if not eval_report.is_allowed:
+        if eval_report.is_infrastructure_failure:
+            # Control could not run. Blocked fail-closed, but recorded as an
+            # availability incident rather than a compliance violation.
+            audit_logger.log_operational_event(
+                hook_name="fsi-model-armor-guard",
+                event_type="PRE_INVOCATION",
+                reason=eval_report.reason,
+                conversation_id=hook.conversation_id,
+                failure_category=eval_report.failure_category or "API_ERROR",
+                step_idx=hook.step_idx,
+                caller_metadata={"source": source, "latency_ms": eval_report.latency_ms},
+            )
+            hook.reply_block_pre_invocation(f"⚠️ [Nandi] {eval_report.reason}")
+            return
+
         audit_logger.log_event(
             hook_name="fsi-model-armor-guard",
             event_type="PRE_INVOCATION",
@@ -98,6 +129,7 @@ def main() -> None:
         deny_reason = f"🛡️ [Model Armor Security Gate] {eval_report.reason}"
         hook.reply_block_pre_invocation(deny_reason)
         return
+
 
     hook.reply_pre_invocation()
 
