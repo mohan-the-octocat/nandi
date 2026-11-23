@@ -13,6 +13,14 @@ environment: "production" # development, staging, production
 #   - AUDIT: Silent mode; logs compliance violations without interrupting flow
 enforcement_mode: "BLOCK"
 
+# Hook Pre-Read File Inspection Policy
+hooks:
+  pre_read_scan: true
+
+# Unscannable Multimodal Binary Payload Policy
+payload:
+  on_unscannable_media: "BLOCK" # BLOCK, ALLOW
+
 # PII Regex & Pattern Matching Engine Configuration
 pii_guard:
   enabled: true

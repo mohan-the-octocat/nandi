@@ -40,10 +40,26 @@ def main() -> None:
             hook.reply_deny(f"🛡️ [Unified Gate] Execution denied: Turn flagged for security policy violation ({block_reason})")
             return
 
-        text_to_scan, source = hook.extract_text_to_scan()
-        if not text_to_scan.strip():
+        extraction = hook.extract_scan_target()
+        if extraction.action == "BLOCK_POLICY":
+            audit_logger.log_event(
+                hook_name="fsi-unified-guard",
+                event_type="PRE_TOOL_USE",
+                decision="deny",
+                reason=extraction.block_reason,
+                risk_score=0.85,
+                conversation_id=hook.conversation_id,
+                step_idx=hook.step_idx,
+                detected_violations=[extraction.source],
+                regulatory_frameworks=["RBI_MD_IT_2023", "SEBI_CSCRF_2024", "DPDP_ACT_2023"],
+                caller_metadata={"source": extraction.source, "tool_name": hook.tool_name},
+            )
+            hook.reply_deny(f"🛡️ [Unified Security Gate] {extraction.block_reason}")
+            return
+        if extraction.action in ("SKIP_CACHED", "NO_ACTIONABLE_TEXT") or not extraction.text_to_scan.strip():
             hook.reply_allow("No actionable text in tool arguments")
             return
+        text_to_scan, source = extraction.text_to_scan, extraction.source
 
         # Phase 1: Tool Args Regex Check
         pii_report = detector.scan(text_to_scan, action_mode="BLOCK")
@@ -68,8 +84,7 @@ def main() -> None:
             return
 
         # Phase 2: Tool Args Model Armor Check
-        response = client.sanitize_user_prompt(text_to_scan)
-        eval_report = evaluator.evaluate(response)
+        eval_report = hook.evaluate_model_armor(client, evaluator, text_to_scan)
         if not eval_report.is_allowed:
             audit_logger.log_event(
                 hook_name="fsi-unified-guard",
@@ -90,15 +105,36 @@ def main() -> None:
                 hook.reply_deny(deny_reason)
             return
 
-        hook.reply_allow("All FSI GRC Security & Safety Gates Passed")
+        hook.reply_allow(
+            "All FSI GRC Security & Safety Gates Passed",
+            is_clean=(
+                not pii_report.contains_pii
+                and bool(getattr(eval_report, "is_clean", False))
+            ),
+        )
         return
 
     # 3. PreInvocation Handling
-    hook.clear_turn_blocked()
-    text_to_scan, source = hook.extract_text_to_scan()
-    if not text_to_scan.strip():
+    extraction = hook.extract_scan_target()
+    if extraction.action == "BLOCK_POLICY":
+        audit_logger.log_event(
+            hook_name="fsi-unified-guard",
+            event_type="PRE_INVOCATION",
+            decision="deny",
+            reason=extraction.block_reason,
+            risk_score=0.85,
+            conversation_id=hook.conversation_id,
+            step_idx=hook.step_idx,
+            detected_violations=[extraction.source],
+            regulatory_frameworks=["RBI_MD_IT_2023", "SEBI_CSCRF_2024", "DPDP_ACT_2023"],
+            caller_metadata={"source": extraction.source},
+        )
+        hook.reply_block_pre_invocation(f"🛡️ [Unified Security Gate] {extraction.block_reason}")
+        return
+    if extraction.action in ("SKIP_CACHED", "NO_ACTIONABLE_TEXT") or not extraction.text_to_scan.strip():
         hook.reply_pre_invocation()
         return
+    text_to_scan, source = extraction.text_to_scan, extraction.source
 
     # Phase 1: Fast-Path Regex & Algorithmic Checksum PII Inspection (<1ms)
     pii_report = detector.scan(text_to_scan, action_mode="BLOCK")
@@ -124,8 +160,7 @@ def main() -> None:
         return
 
     # Phase 2: Deep Model Armor Security & AI Safety Inspection
-    response = client.sanitize_user_prompt(text_to_scan)
-    eval_report = evaluator.evaluate(response)
+    eval_report = hook.evaluate_model_armor(client, evaluator, text_to_scan)
 
     if not eval_report.is_allowed:
         audit_logger.log_event(
@@ -144,7 +179,12 @@ def main() -> None:
         hook.reply_block_pre_invocation(deny_reason)
         return
 
-    hook.reply_pre_invocation()
+    hook.reply_pre_invocation(
+        is_clean=(
+            not pii_report.contains_pii
+            and bool(getattr(eval_report, "is_clean", False))
+        )
+    )
 
 
 if __name__ == "__main__":

@@ -6,7 +6,7 @@
 [![Compliance: SEBI CSCRF 2024](https://img.shields.io/badge/Compliance-SEBI%20CSCRF%202024-green)](docs/SEBI_COMPLIANCE.md)
 [![Compliance: DPDP Act 2023](https://img.shields.io/badge/Compliance-DPDP%20Act%202023-orange)](docs/RBI_COMPLIANCE.md)
 [![Security: Google Cloud Model Armor](https://img.shields.io/badge/Security-Google%20Cloud%20Model%20Armor-red)](GCP/MODEL_ARMOR_SETUP.md)
-[![Test Suite: 100% Pass](https://img.shields.io/badge/Tests-40%2F40%20Passing-brightgreen)](tests/run_all_tests.py)
+[![Test Suite: 100% Pass](https://img.shields.io/badge/Tests-69%2F69%20Passing-brightgreen)](tests/run_all_tests.py)
 
 Governance, Risk, and Compliance (GRC) plugin for Google Antigravity providing real-time Indian PII regex/checksum protection and Google Cloud Model Armor safety filtering for Financial Services Institutions.
 
@@ -53,7 +53,7 @@ nandi/
 │   ├── plugin.json                          # Antigravity plugin manifest
 │   ├── rules/                               # Ambient workspace rules (RBI, SEBI, PII handling)
 │   ├── skills/                              # Interactive compliance & diagnostic skills
-│   └── src/                                 # Zero-dependency Python core (CLI, hooks, PII engine)
+│   └── src/                                 # Zero-dependency Python core (CLI, file_guard, hooks, PII engine)
 │
 ├── GCP/                                     # Server-side Google Cloud Platform Infrastructure
 │   ├── bin/                                 # Server setup automation (.sh, .ps1, .cmd, .bat)
@@ -61,9 +61,10 @@ nandi/
 │   ├── generated_model_armor_template.json  # Standalone REST API payload
 │   └── MODEL_ARMOR_SETUP.md                 # Regional endpoint & IAM setup reference
 │
-├── tests/                                   # Automated test suite (40 test suites, 100% pass)
+├── tests/                                   # Automated test suite (100% pass)
 │   ├── run_all_tests.py                     # Master test runner
 │   ├── test_checksums.py                    # Verhoeff, Luhn, Mod-36, UPI, IFSC validators
+│   ├── test_file_guard.py                   # Paged UTF-8 slicing, notebook views, media gate, and LRU cache tests
 │   ├── test_model_armor.py                  # Model Armor client, template CRUD, and IAM tests
 │   ├── test_hooks.py                        # Lifecycle hook interception & fail-closed gates
 │   ├── test_governance.py                   # Cryptographic audit hash chains & compliance maps
@@ -112,6 +113,17 @@ nandi/
 - Workspace rules: [`AGY-Plugin/rules/rbi_governance.md`](AGY-Plugin/rules/rbi_governance.md), [`AGY-Plugin/rules/sebi_governance.md`](AGY-Plugin/rules/sebi_governance.md), [`AGY-Plugin/rules/pii_handling.md`](AGY-Plugin/rules/pii_handling.md).
 - Interactive skills: [`AGY-Plugin/skills/fsi-compliance-audit`](AGY-Plugin/skills/fsi-compliance-audit), [`AGY-Plugin/skills/model-armor-diagnostics`](AGY-Plugin/skills/model-armor-diagnostics).
 - CLI Tool: [`AGY-Plugin/src/cli/grc_admin.py`](AGY-Plugin/src/cli/grc_admin.py).
+
+### 5. Pre-Read File Slice & Multimodal Media Inspection (`hooks` & `payload` in `config/config.yaml`)
+- **Pre-Read Inspection Switch (`hooks.pre_read_scan`)**: `true` *(Default)* or `false`. When `true`, `PreToolUse` unconditionally pre-reads every targeted slice across `read_file`, `view_file` (including nested `TextOptions`), and `notebook_edit` (`list`, `get`, `get_with_outputs` up to 10 MiB) alongside all string/numeric fields in `toolCall.args`. `file://` URIs are decoded automatically.
+- **Unscannable Multimodal Binary Policy (`payload.on_unscannable_media`)**:
+  - `"BLOCK"` *(Default)*: Denies binary multimodal media (`image/*` except `image/svg+xml`, `audio/*`, `video/*`, `application/pdf`, Office/OpenDocument formats, binary `outputs[].data` in `notebook_edit`, and binary `USER_INPUT.media` attachments in `PreInvocation`). `text/*` and `image/svg+xml` attachments are verified as NUL-free UTF-8 and scanned as text; non-media binaries (such as NUL/UTF-16 files, archives, and executables) are skipped so the host tool handles binary rejection natively.
+  - `"ALLOW"`: Permits unscannable binary media without blocking while continuing to inspect scannable UTF-8 text and tool arguments.
+- **Bounded Slicing, Parallel Multi-Chunk Inspection & Content-Addressed Cache**:
+  - **Paged reads (`read_file`, `view_file`)**: Stream up to 800 lines and 46,080 bytes per view (files up to 100 MiB) in 64 KiB UTF-8-aligned blocks with 512-byte backward boundary overlap on paginated byte offsets and a 49,152-byte single-RPC ceiling.
+  - **Notebook & prompt payloads**: Enforce a 250,000-character pre-read scan cap; payloads exceeding 49,152 UTF-8 bytes are split into 40,000-character chunks with 4,096-character overlap and evaluated across up to 4 daemon worker threads under a 24-second wall-clock deadline (`30`s hook timeout in `hooks.json`).
+  - **`PreInvocation` transcript & media handling**: Inspects the user's prompt text (resolving `transcript_full.jsonl` when `transcript.jsonl` truncates long inputs) and `USER_INPUT.media` without speculative `@file` disk reads; `@`-referenced files are inspected in `PreToolUse` when read by the agent.
+  - **Clean-Scan LRU Cache**: Caches zero-finding (`is_clean`) verdicts in `~/.gemini/nandi/state/nandi_read_cache.json` (`0o700`, overridable via `NANDI_STATE_DIR`) keyed by `<guard>:<config_sha256>:<content_sha256>` (incorporating `enforcement_mode`, policy configs, and Model Armor target settings) with a strict 7,200-second (2-hour) non-sliding TTL and 2,000-entry LRU bound.
 
 </details>
 
@@ -292,7 +304,7 @@ python3 AGY-Plugin/src/cli/grc_admin.py show-audit --tail 10
 ```bash
 python3 tests/run_all_tests.py
 ```
-Executes all 40 test suites covering Verhoeff D5, Luhn, Mod-36, Model Armor REP connectivity, fail-closed policy gates, OS-specific packaging, and cryptographic audit hash chains (100% pass rate).
+Executes all 69 test suites covering Verhoeff D5, Luhn, Mod-36, Model Armor REP connectivity, fail-closed policy gates, OS-specific packaging, and cryptographic audit hash chains (100% pass rate).
 
 </details>
 
